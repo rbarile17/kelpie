@@ -18,11 +18,9 @@ class DataPoisoning:
     and to the entity_similarity modules.
     """
 
-    def __init__(self,
-                 model: Model,
-                 dataset: Dataset,
-                 hyperparameters: dict,
-                 prefilter_type: str):
+    def __init__(
+        self, model: Model, dataset: Dataset, hyperparameters: dict, prefilter_type: str
+    ):
         """
         DataPoisoning object constructor.
 
@@ -43,15 +41,19 @@ class DataPoisoning:
             self.prefilter = NoPreFilter(model=model, dataset=dataset)
         else:
             self.prefilter = TopologyPreFilter(model=model, dataset=dataset)
-        self.engine = DataPoisoningEngine(model=model,
-                                          dataset=dataset,
-                                          hyperparameters=hyperparameters,
-                                          epsilon=hyperparameters[LEARNING_RATE])
+        self.engine = DataPoisoningEngine(
+            model=model,
+            dataset=dataset,
+            hyperparameters=hyperparameters,
+            epsilon=hyperparameters[LEARNING_RATE],
+        )
 
-    def explain_necessary(self,
-                          sample_to_explain: Tuple[Any, Any, Any],
-                          perspective: str,
-                          num_promising_samples=50):
+    def explain_necessary(
+        self,
+        sample_to_explain: Tuple[Any, Any, Any],
+        perspective: str,
+        num_promising_samples=50,
+    ):
         """
         This method extracts necessary explanations for a specific sample,
         from the perspective of either its head or its tail.
@@ -73,25 +75,33 @@ class DataPoisoning:
 
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(sample_to_explain=sample_to_explain,
-                                                                          perspective=perspective,
-                                                                          top_k=num_promising_samples)
+        most_promising_samples = self.prefilter.top_promising_samples_for(
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            top_k=num_promising_samples,
+        )
 
-        rule_extractor = DataPoisoningNecessaryExplanationBuilder(model=self.model,
-                                                                  dataset=self.dataset,
-                                                                  hyperparameters=self.hyperparameters,
-                                                                  sample_to_explain=sample_to_explain,
-                                                                  perspective=perspective, )
+        rule_extractor = DataPoisoningNecessaryExplanationBuilder(
+            model=self.model,
+            dataset=self.dataset,
+            hyperparameters=self.hyperparameters,
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+        )
 
-        rules_with_relevance = rule_extractor.build_explanations(samples_to_remove=most_promising_samples)
+        rules_with_relevance = rule_extractor.build_explanations(
+            samples_to_remove=most_promising_samples
+        )
         return rules_with_relevance
 
-    def explain_sufficient(self,
-                           sample_to_explain: Tuple[Any, Any, Any],
-                           perspective: str,
-                           num_promising_samples=50,
-                           num_entities_to_convert=10,
-                           entities_to_convert=None):
+    def explain_sufficient(
+        self,
+        sample_to_explain: Tuple[Any, Any, Any],
+        perspective: str,
+        num_promising_samples=50,
+        num_entities_to_convert=10,
+        entities_to_convert=None,
+    ):
         """
         This method extracts necessary explanations for a specific sample,
         from the perspective of either its head or its tail.
@@ -116,18 +126,23 @@ class DataPoisoning:
                                     (if they are passed instead of having to be extracted)
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(sample_to_explain=sample_to_explain,
-                                                                          perspective=perspective,
-                                                                          top_k=num_promising_samples)
+        most_promising_samples = self.prefilter.top_promising_samples_for(
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            top_k=num_promising_samples,
+        )
 
-        explanation_builder = DataPoisoningSufficientExplanationBuilder(model=self.model,
-                                                                        dataset=self.dataset,
-                                                                        hyperparameters=self.hyperparameters,
-                                                                        sample_to_explain=sample_to_explain,
-                                                                        perspective=perspective,
-                                                                        num_entities_to_convert=num_entities_to_convert,
-                                                                        entities_to_convert=entities_to_convert)
+        explanation_builder = DataPoisoningSufficientExplanationBuilder(
+            model=self.model,
+            dataset=self.dataset,
+            hyperparameters=self.hyperparameters,
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            num_entities_to_convert=num_entities_to_convert,
+            entities_to_convert=entities_to_convert,
+        )
 
-        explanations_with_relevance = explanation_builder.build_explanations(samples_to_add=most_promising_samples,
-                                                                             top_k=10)
+        explanations_with_relevance = explanation_builder.build_explanations(
+            samples_to_add=most_promising_samples, top_k=10
+        )
         return explanations_with_relevance, explanation_builder.entities_to_convert

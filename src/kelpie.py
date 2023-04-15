@@ -5,7 +5,10 @@ from .prefilters import TYPE_PREFILTER, TOPOLOGY_PREFILTER, NO_PREFILTER
 from .prefilters import NoPreFilter, TypeBasedPreFilter, TopologyPreFilter
 from .relevance_engines import PostTrainingEngine
 from .link_prediction.models import Model
-from .explanation_builders import StochasticNecessaryExplanationBuilder, StochasticSufficientExplanationBuilder
+from .explanation_builders import (
+    StochasticNecessaryExplanationBuilder,
+    StochasticSufficientExplanationBuilder,
+)
 
 
 class Kelpie:
@@ -17,13 +20,15 @@ class Kelpie:
 
     DEFAULT_MAX_LENGTH = 4
 
-    def __init__(self,
-                 model: Model,
-                 dataset: Dataset,
-                 hyperparameters: dict,
-                 prefilter_type: str,
-                 relevance_threshold: float = None,
-                 max_explanation_length: int = DEFAULT_MAX_LENGTH):
+    def __init__(
+        self,
+        model: Model,
+        dataset: Dataset,
+        hyperparameters: dict,
+        prefilter_type: str,
+        relevance_threshold: float = None,
+        max_explanation_length: int = DEFAULT_MAX_LENGTH,
+    ):
         """
         Kelpie object constructor.
 
@@ -49,16 +54,18 @@ class Kelpie:
         else:
             self.prefilter = TopologyPreFilter(model=model, dataset=dataset)
 
-        self.engine = PostTrainingEngine(model=model,
-                                         dataset=dataset,
-                                         hyperparameters=hyperparameters)
+        self.engine = PostTrainingEngine(
+            model=model, dataset=dataset, hyperparameters=hyperparameters
+        )
 
-    def explain_sufficient(self,
-                           sample_to_explain: Tuple[Any, Any, Any],
-                           perspective: str,
-                           num_promising_samples: int = 50,
-                           num_entities_to_convert: int = 10,
-                           entities_to_convert: list = None):
+    def explain_sufficient(
+        self,
+        sample_to_explain: Tuple[Any, Any, Any],
+        perspective: str,
+        num_promising_samples: int = 50,
+        num_entities_to_convert: int = 10,
+        entities_to_convert: list = None,
+    ):
         """
         This method extracts sufficient explanations for a specific sample,
         from the perspective of either its head or its tail.
@@ -87,27 +94,35 @@ class Kelpie:
 
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(sample_to_explain=sample_to_explain,
-                                                                          perspective=perspective,
-                                                                          top_k=num_promising_samples)
+        most_promising_samples = self.prefilter.top_promising_samples_for(
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            top_k=num_promising_samples,
+        )
 
-        explanation_builder = StochasticSufficientExplanationBuilder(model=self.model,
-                                                                     dataset=self.dataset,
-                                                                     hyperparameters=self.hyperparameters,
-                                                                     sample_to_explain=sample_to_explain,
-                                                                     perspective=perspective,
-                                                                     num_entities_to_convert=num_entities_to_convert,
-                                                                     entities_to_convert=entities_to_convert,
-                                                                     relevance_threshold=self.relevance_threshold,
-                                                                     max_explanation_length=self.max_explanation_length)
+        explanation_builder = StochasticSufficientExplanationBuilder(
+            model=self.model,
+            dataset=self.dataset,
+            hyperparameters=self.hyperparameters,
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            num_entities_to_convert=num_entities_to_convert,
+            entities_to_convert=entities_to_convert,
+            relevance_threshold=self.relevance_threshold,
+            max_explanation_length=self.max_explanation_length,
+        )
 
-        explanations_with_relevance = explanation_builder.build_explanations(samples_to_add=most_promising_samples)
+        explanations_with_relevance = explanation_builder.build_explanations(
+            samples_to_add=most_promising_samples
+        )
         return explanations_with_relevance, explanation_builder.entities_to_convert
 
-    def explain_necessary(self,
-                          sample_to_explain: Tuple[Any, Any, Any],
-                          perspective: str,
-                          num_promising_samples: int = 50):
+    def explain_necessary(
+        self,
+        sample_to_explain: Tuple[Any, Any, Any],
+        perspective: str,
+        num_promising_samples: int = 50,
+    ):
         """
         This method extracts necessary explanations for a specific sample,
         from the perspective of either its head or its tail.
@@ -129,17 +144,23 @@ class Kelpie:
 
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(sample_to_explain=sample_to_explain,
-                                                                          perspective=perspective,
-                                                                          top_k=num_promising_samples)
+        most_promising_samples = self.prefilter.top_promising_samples_for(
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            top_k=num_promising_samples,
+        )
 
-        explanation_builder = StochasticNecessaryExplanationBuilder(model=self.model,
-                                                                    dataset=self.dataset,
-                                                                    hyperparameters=self.hyperparameters,
-                                                                    sample_to_explain=sample_to_explain,
-                                                                    perspective=perspective,
-                                                                    relevance_threshold=self.relevance_threshold,
-                                                                    max_explanation_length=self.max_explanation_length)
+        explanation_builder = StochasticNecessaryExplanationBuilder(
+            model=self.model,
+            dataset=self.dataset,
+            hyperparameters=self.hyperparameters,
+            sample_to_explain=sample_to_explain,
+            perspective=perspective,
+            relevance_threshold=self.relevance_threshold,
+            max_explanation_length=self.max_explanation_length,
+        )
 
-        explanations_with_relevance = explanation_builder.build_explanations(samples_to_remove=most_promising_samples)
+        explanations_with_relevance = explanation_builder.build_explanations(
+            samples_to_remove=most_promising_samples
+        )
         return explanations_with_relevance

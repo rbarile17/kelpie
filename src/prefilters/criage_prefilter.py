@@ -4,14 +4,14 @@ from .prefilter import PreFilter
 from ..dataset import Dataset
 from ..link_prediction.models import Model
 
+
 class CriagePreFilter(PreFilter):
     """
     The CriagePreFilter object is a PreFilter that just returns all the samples
     that have as tail the same tail as the sample to explain
     """
-    def __init__(self,
-                 model: Model,
-                 dataset: Dataset):
+
+    def __init__(self, model: Model, dataset: Dataset):
         """
         CriagePreFilter object constructor.
 
@@ -22,19 +22,18 @@ class CriagePreFilter(PreFilter):
 
         self.tail_2_train_samples = {}
 
-        for (h, r, t) in dataset.train_samples:
-
+        for h, r, t in dataset.train_samples:
             if t not in self.tail_2_train_samples:
                 self.tail_2_train_samples[t] = []
             self.tail_2_train_samples[t].append((h, r, t))
 
-
-    def top_promising_samples_for(self,
-                                  sample_to_explain:Tuple[Any, Any, Any],
-                                  perspective:str,
-                                  top_k=50,
-                                  verbose=True):
-
+    def top_promising_samples_for(
+        self,
+        sample_to_explain: Tuple[Any, Any, Any],
+        perspective: str,
+        top_k=50,
+        verbose=True,
+    ):
         """
         This method returns all training samples that have, as a tail,
         either the head or the tail of the sample to explain.

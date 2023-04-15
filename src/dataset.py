@@ -17,25 +17,22 @@ YAGO3_10 = "YAGO3-10"
 ALL_DATASET_NAMES = [FB15K, FB15K_237, WN18, WN18RR, YAGO3_10]
 
 # relation types
-ONE_TO_ONE="1-1"
-ONE_TO_MANY="1-N"
-MANY_TO_ONE="N-1"
-MANY_TO_MANY="N-N"
+ONE_TO_ONE = "1-1"
+ONE_TO_MANY = "1-N"
+MANY_TO_ONE = "N-1"
+MANY_TO_MANY = "N-N"
+
 
 class Dataset:
-
-    def __init__(self,
-                 name: str,
-                 separator: str = "\t",
-                 load: bool = True):
+    def __init__(self, name: str, separator: str = "\t", load: bool = True):
         """
-            Dataset constructor.
-            This method will initialize the Dataset and its structures.
-            If parameter "load" is set to true, it will immediately read the dataset files
-            and fill the data structures with the read data.
-            :param name: the dataset name. It must correspond to the dataset folder name in DATA_PATH
-            :param separator: the character that separates head, relation and tail in each triple in the dataset files
-            :param load: boolean flag; if True, the dataset files must be accessed and read immediately.
+        Dataset constructor.
+        This method will initialize the Dataset and its structures.
+        If parameter "load" is set to true, it will immediately read the dataset files
+        and fill the data structures with the read data.
+        :param name: the dataset name. It must correspond to the dataset folder name in DATA_PATH
+        :param separator: the character that separates head, relation and tail in each triple in the dataset files
+        :param load: boolean flag; if True, the dataset files must be accessed and read immediately.
         """
 
         # note: the "load" flag is necessary because the Kelpie datasets do not require loading,
@@ -60,9 +57,14 @@ class Dataset:
         self.relation_name_2_id, self.relation_id_2_name = dict(), dict()
 
         # collections of triples (facts with textual names) and samples (facts with numeric ids)
-        self.train_triples, self.train_samples,\
-        self.valid_triples, self.valid_samples, \
-        self.test_triples, self.test_samples = None, None, None, None, None, None
+        (
+            self.train_triples,
+            self.train_samples,
+            self.valid_triples,
+            self.valid_samples,
+            self.test_triples,
+            self.test_samples,
+        ) = (None, None, None, None, None, None)
 
         # Map each (head_id, rel_id) pair to the tail ids that complete the pair in train, valid or test samples.
         # This is used when computing ranks in filtered scenario.
@@ -90,9 +92,15 @@ class Dataset:
 
             # read train, valid and test triples, and extract the corresponding samples; both are numpy arrays.
             # Triples feature entity and relation names; samples feature the corresponding ids.
-            self.train_triples, self.train_samples = self._read_triples(self.train_path, self.separator)
-            self.valid_triples, self.valid_samples = self._read_triples(self.valid_path, self.separator)
-            self.test_triples, self.test_samples = self._read_triples(self.test_path, self.separator)
+            self.train_triples, self.train_samples = self._read_triples(
+                self.train_path, self.separator
+            )
+            self.valid_triples, self.valid_samples = self._read_triples(
+                self.valid_path, self.separator
+            )
+            self.test_triples, self.test_samples = self._read_triples(
+                self.test_path, self.separator
+            )
 
             # this is used for O(1) access to training samples
             self.train_samples_set = {(h, r, t) for (h, r, t) in self.train_samples}
@@ -100,27 +108,35 @@ class Dataset:
             # update the overall number of distinct entities and distinct relations in the dataset
             self.num_entities = len(self.entities)
             self.num_direct_relations = len(self.relations)
-            self.num_relations = 2*len(self.relations)  # also count inverse relations
+            self.num_relations = 2 * len(self.relations)  # also count inverse relations
 
             # add the inverse relations to the relation_id_2_name and relation_name_2_id data structures
             for relation_id in range(self.num_direct_relations):
                 inverse_relation_id = relation_id + self.num_direct_relations
-                inverse_relation_name = "INVERSE_" + self.relation_id_2_name[relation_id]
+                inverse_relation_name = (
+                    "INVERSE_" + self.relation_id_2_name[relation_id]
+                )
                 self.relation_id_2_name[inverse_relation_id] = inverse_relation_name
                 self.relation_name_2_id[inverse_relation_name] = inverse_relation_id
 
             # add the tail_id to the list of all tails seen completing (head_id, relation_id, ?)
             # and add the head_id to the list of all heads seen completing (?, relation_id, tail_id)
-            all_samples = numpy.vstack((self.train_samples, self.valid_samples, self.test_samples))
+            all_samples = numpy.vstack(
+                (self.train_samples, self.valid_samples, self.test_samples)
+            )
             for i in range(all_samples.shape[0]):
                 (head_id, relation_id, tail_id) = all_samples[i]
                 self.to_filter[(head_id, relation_id)].append(tail_id)
-                self.to_filter[(tail_id, relation_id + self.num_direct_relations)].append(head_id)
+                self.to_filter[
+                    (tail_id, relation_id + self.num_direct_relations)
+                ].append(head_id)
                 # if the sample was a training sample, also do the same for the train_to_filter data structure;
                 # Also fill the entity_2_degree and relation_2_degree dicts.
                 if i < len(self.train_samples):
                     self.train_to_filter[(head_id, relation_id)].append(tail_id)
-                    self.train_to_filter[(tail_id, relation_id + self.num_direct_relations)].append(head_id)
+                    self.train_to_filter[
+                        (tail_id, relation_id + self.num_direct_relations)
+                    ].append(head_id)
                     self.entity_2_degree[head_id] += 1
                     self.relation_2_degree[relation_id] += 1
                     if tail_id != head_id:
@@ -131,11 +147,11 @@ class Dataset:
 
     def _read_triples(self, triples_path: str, separator="\t"):
         """
-            Private method to read the triples (that is, facts and samples) from a textual file
-            :param triples_path: the path of the file to read the triples from
-            :param separator: the separator used in the file to read to separate head, relation and tail of each triple
-            :return: a 2D numpy array containing the read facts,
-                     and a 2D numpy array containing the corresponding samples
+        Private method to read the triples (that is, facts and samples) from a textual file
+        :param triples_path: the path of the file to read the triples from
+        :param separator: the separator used in the file to read to separate head, relation and tail of each triple
+        :return: a 2D numpy array containing the read facts,
+                 and a 2D numpy array containing the corresponding samples
         """
         textual_triples = []
         data_triples = []
@@ -143,12 +159,16 @@ class Dataset:
         with open(triples_path, "r") as triples_file:
             lines = triples_file.readlines()
             for line in lines:
-                line = html.unescape(line).lower()   # this is required for some YAGO3-10 lines
+                line = html.unescape(
+                    line
+                ).lower()  # this is required for some YAGO3-10 lines
                 head_name, relation_name, tail_name = line.strip().split(separator)
 
                 # remove unwanted characters
                 head_name = head_name.replace(",", "").replace(":", "").replace(";", "")
-                relation_name = relation_name.replace(",", "").replace(":", "").replace(";", "")
+                relation_name = (
+                    relation_name.replace(",", "").replace(":", "").replace(";", "")
+                )
                 tail_name = tail_name.replace(",", "").replace(":", "").replace(";", "")
 
                 textual_triples.append((head_name, relation_name, tail_name))
@@ -183,13 +203,13 @@ class Dataset:
 
                 data_triples.append((head_id, relation_id, tail_id))
 
-        return numpy.array(textual_triples), numpy.array(data_triples).astype('int64')
+        return numpy.array(textual_triples), numpy.array(data_triples).astype("int64")
 
     def invert_samples(self, samples: numpy.array):
         """
-            This method computes and returns the inverted version of the passed samples.
-            :param samples: the direct samples to invert, in the form of a numpy array
-            :return: the corresponding inverse samples, in the form of a numpy array
+        This method computes and returns the inverted version of the passed samples.
+        :param samples: the direct samples to invert, in the form of a numpy array
+        :return: the corresponding inverse samples, in the form of a numpy array
         """
         output = numpy.copy(samples)
 
@@ -199,25 +219,30 @@ class Dataset:
 
         return output
 
-
     def _compute_relation_2_type(self):
         """
-            This method computes the type of each relation in the dataset based on the self.train_to_filter structure
-            (that must have been already computed and populated).
-            The mappings relation - relation type are written in the self.relation_2_type dict.
-            :return: None
+        This method computes the type of each relation in the dataset based on the self.train_to_filter structure
+        (that must have been already computed and populated).
+        The mappings relation - relation type are written in the self.relation_2_type dict.
+        :return: None
         """
         if len(self.train_to_filter) == 0:
-            raise Exception("The dataset has not been loaded yet, so it is not possible to compute relation types yet.")
+            raise Exception(
+                "The dataset has not been loaded yet, so it is not possible to compute relation types yet."
+            )
 
         relation_2_heads_nums = defaultdict(lambda: list())
         relation_2_tails_nums = defaultdict(lambda: list())
 
-        for (x, relation) in self.train_to_filter:
+        for x, relation in self.train_to_filter:
             if relation >= self.num_direct_relations:
-                relation_2_heads_nums[relation - self.num_direct_relations].append(len(self.to_filter[(x, relation)]))
+                relation_2_heads_nums[relation - self.num_direct_relations].append(
+                    len(self.to_filter[(x, relation)])
+                )
             else:
-                relation_2_tails_nums[relation].append(len(self.to_filter[(x, relation)]))
+                relation_2_tails_nums[relation].append(
+                    len(self.to_filter[(x, relation)])
+                )
 
         self.relation_2_type = {}
 
@@ -248,9 +273,9 @@ class Dataset:
 
     def add_training_samples(self, samples_to_add: numpy.array):
         """
-            Add some samples to the training samples of this dataset.
-            The to_filter and train_to_filter data structures will be updated accordingly
-            :param samples_to_add: the list of samples to add, in the form of a numpy array
+        Add some samples to the training samples of this dataset.
+        The to_filter and train_to_filter data structures will be updated accordingly
+        :param samples_to_add: the list of samples to add, in the form of a numpy array
         """
 
         if len(samples_to_add) == 0:
@@ -258,7 +283,7 @@ class Dataset:
 
         self.train_samples = numpy.vstack((self.train_samples, samples_to_add))
 
-        for (head, rel, tail) in samples_to_add:
+        for head, rel, tail in samples_to_add:
             self.train_samples_set.add((head, rel, tail))
             self.to_filter[(head, rel)].append(tail)
             self.to_filter[(tail, rel + self.num_direct_relations)].append(head)
@@ -267,11 +292,19 @@ class Dataset:
 
     def sample_to_fact(self, sample_to_convert: Tuple):
         head_id, rel_id, tail_id = sample_to_convert
-        return self.entity_id_2_name[head_id], self.relation_id_2_name[rel_id], self.entity_id_2_name[tail_id]
+        return (
+            self.entity_id_2_name[head_id],
+            self.relation_id_2_name[rel_id],
+            self.entity_id_2_name[tail_id],
+        )
 
     def fact_to_sample(self, fact_to_convert: Tuple):
         head_name, rel_name, tail_name = fact_to_convert
-        return self.entity_name_2_id[head_name], self.relation_name_2_id[rel_name], self.entity_name_2_id[tail_name]
+        return (
+            self.entity_name_2_id[head_name],
+            self.relation_name_2_id[rel_name],
+            self.entity_name_2_id[tail_name],
+        )
 
     def remove_training_samples(self, samples_to_remove: numpy.array):
         """
@@ -292,7 +325,9 @@ class Dataset:
             head, rel, tail = sample_to_remove
 
             if (head, rel, tail) in self.train_samples_set:
-                index = numpy.where(numpy.all(self.train_samples == sample_to_remove, axis=1))
+                index = numpy.where(
+                    numpy.all(self.train_samples == sample_to_remove, axis=1)
+                )
                 indices_to_remove.append(index[0])
                 removed_samples.append(self.train_samples[index[0]])
 
@@ -319,7 +354,9 @@ class Dataset:
         head, rel, tail = sample_to_remove
 
         if (head, rel, tail) in self.train_samples_set:
-            index = numpy.where(numpy.all(self.train_samples == sample_to_remove, axis=1))
+            index = numpy.where(
+                numpy.all(self.train_samples == sample_to_remove, axis=1)
+            )
             self.train_samples = numpy.delete(self.train_samples, index[0], axis=0)
 
             self.to_filter[(head, rel)].remove(tail)
@@ -329,7 +366,9 @@ class Dataset:
         return False
 
     @staticmethod
-    def replace_entity_in_sample(sample, old_entity: int, new_entity:int, as_numpy=True):
+    def replace_entity_in_sample(
+        sample, old_entity: int, new_entity: int, as_numpy=True
+    ):
         h, r, t = sample
         if h == old_entity:
             h = new_entity
@@ -338,9 +377,11 @@ class Dataset:
         return numpy.array([h, r, t]) if as_numpy else (h, r, t)
 
     @staticmethod
-    def replace_entity_in_samples(samples, old_entity: int, new_entity:int, as_numpy=True):
+    def replace_entity_in_samples(
+        samples, old_entity: int, new_entity: int, as_numpy=True
+    ):
         result = []
-        for (h, r, t) in samples:
+        for h, r, t in samples:
             if h == old_entity:
                 h = new_entity
             if t == old_entity:
@@ -353,4 +394,4 @@ class Dataset:
         return "<" + ", ".join(self.sample_to_fact(sample)) + ">"
 
     def printable_nple(self, nple: list):
-        return" + ".join([self.printable_sample(sample) for sample in nple])
+        return " + ".join([self.printable_sample(sample) for sample in nple])

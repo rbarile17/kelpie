@@ -6,15 +6,15 @@ TOPOLOGY_PREFILTER = "topology_based"
 TYPE_PREFILTER = "type_based"
 NO_PREFILTER = "none"
 
+
 class PreFilter:
 
     """
     The PreFilter object is the manager of the prefilter process.
     It implements the prefiltering pipeline.
     """
-    def __init__(self,
-                 model: Model,
-                 dataset: Dataset):
+
+    def __init__(self, model: Model, dataset: Dataset):
         """
         PreFilter constructor.
 
@@ -24,11 +24,9 @@ class PreFilter:
         self.model = model
         self.dataset = dataset
 
-    def top_promising_samples_for(self,
-                                 sample_to_explain:Tuple[Any, Any, Any],
-                                 perspective:str,
-                                 top_k=50):
-
+    def top_promising_samples_for(
+        self, sample_to_explain: Tuple[Any, Any, Any], perspective: str, top_k=50
+    ):
         """
         This method extracts the top k promising samples for interpreting the sample to explain,
         from the perspective of either its head or its tail (that is, either featuring its head or its tail).

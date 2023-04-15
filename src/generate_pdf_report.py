@@ -11,14 +11,15 @@ OUTPUT_FILEPATH = os.path.join(KELPIE_ROOT, OUTPUT_FILE)
 
 
 def generate_pdf():
-
     print(f"Saving the PDF report in {OUTPUT_FILE}...")
 
     doc = SimpleDocTemplate(
         OUTPUT_FILE,
         pagesize=letter,
-        rightMargin=72, leftMargin=72,
-        topMargin=72, bottomMargin=18,
+        rightMargin=72,
+        leftMargin=72,
+        topMargin=72,
+        bottomMargin=18,
     )
 
     styles = getSampleStyleSheet()
@@ -59,10 +60,18 @@ def generate_pdf():
     - the Criage method described in "Investigating Robustness and Interpretability of Link Prediction via Adversarial Modifications", by Pezeshkpour et al.;<br /><br />
     """
 
-    end_to_end_necessary_table_title = """End-to-end necessary explanations: effectiveness (Paper Table 3)<br />"""
-    end_to_end_necessary_table_file = os.path.join(IMAGES_FOLDER, "end_to_end_table_necessary.png")
-    end_to_end_sufficient_table_title = """End-to-end sufficient explanations: effectiveness (Paper Table 4)<br />"""
-    end_to_end_sufficient_table_file = os.path.join(IMAGES_FOLDER, "end_to_end_table_sufficient.png")
+    end_to_end_necessary_table_title = (
+        """End-to-end necessary explanations: effectiveness (Paper Table 3)<br />"""
+    )
+    end_to_end_necessary_table_file = os.path.join(
+        IMAGES_FOLDER, "end_to_end_table_necessary.png"
+    )
+    end_to_end_sufficient_table_title = (
+        """End-to-end sufficient explanations: effectiveness (Paper Table 4)<br />"""
+    )
+    end_to_end_sufficient_table_file = os.path.join(
+        IMAGES_FOLDER, "end_to_end_table_sufficient.png"
+    )
 
     explanation_lengths_text = """<b>Explanation Lengths</b><br />
     We report in the following charts the lengths of the explanations extracted in our end-to-end experiments.
@@ -70,9 +79,13 @@ def generate_pdf():
     """
 
     explanation_lengths_necessary_table_title = """End-to-end necessary explanations: length distribution (Paper Table 5)<br />"""
-    explanation_lengths_necessary_table_file = os.path.join(IMAGES_FOLDER, "explanation_lengths_table_necessary.png")
+    explanation_lengths_necessary_table_file = os.path.join(
+        IMAGES_FOLDER, "explanation_lengths_table_necessary.png"
+    )
     explanation_lengths_sufficient_table_title = """End-to-end sufficient explanations: length distribution (Paper Table 5)<br />"""
-    explanation_lengths_sufficient_table_file = os.path.join(IMAGES_FOLDER, "explanation_lengths_table_sufficient.png")
+    explanation_lengths_sufficient_table_file = os.path.join(
+        IMAGES_FOLDER, "explanation_lengths_table_sufficient.png"
+    )
 
     minimality_text = """<b>Minimality experiments</b><br />
     To demonstrate that the explanation identified by Kelpie are indeed the <b>smallest</b> sets of facts that satisfy our definitions, we run minimality experiments both in the necessary and in the sufficient scenario.<br />
@@ -81,16 +94,26 @@ def generate_pdf():
     We report in the following tables such a decrease in effectiveness by measuring which portion of the H@1 and MRR variation obtained by the "full" explanations is lost when using the sampled explanations instead.
     """
 
-    minimality_necessary_table_title = """Minimality necessary experiment: effectiveness (Paper Table 6)<br />"""
-    minimality_necessary_table_file = os.path.join(IMAGES_FOLDER, "minimality_table_necessary.png")
-    minimality_sufficient_table_title = """Minimality sufficient explanations: effectiveness (Paper Table 6)<br />"""
-    minimality_sufficient_table_file = os.path.join(IMAGES_FOLDER, "minimality_table_sufficient.png")
+    minimality_necessary_table_title = (
+        """Minimality necessary experiment: effectiveness (Paper Table 6)<br />"""
+    )
+    minimality_necessary_table_file = os.path.join(
+        IMAGES_FOLDER, "minimality_table_necessary.png"
+    )
+    minimality_sufficient_table_title = (
+        """Minimality sufficient explanations: effectiveness (Paper Table 6)<br />"""
+    )
+    minimality_sufficient_table_file = os.path.join(
+        IMAGES_FOLDER, "minimality_table_sufficient.png"
+    )
 
     prefilter_times_text = """<b>Pre-Filter</b><br /><br />
     We compare here the explanation extraction times, for entities of various degrees, obtained using and not using a Pre-Filter component.<br /><br />
     """
     prefilter_times_plot_title = """Extraction times by entity degree with and without Pre-Filters (Paper Figure 6)<br />"""
-    prefilter_times_plot_file = os.path.join(IMAGES_FOLDER, "extraction_times_with_and_without_prefilter_plot.png")
+    prefilter_times_plot_file = os.path.join(
+        IMAGES_FOLDER, "extraction_times_with_and_without_prefilter_plot.png"
+    )
 
     end_user_study = """<b>End User Study</b><br />
     We report here the results of our End User Study.<br /><br />
@@ -107,27 +130,43 @@ def generate_pdf():
     """
 
     necessary_threshold_table_title = """Necessary Threshold ξ variation results"""
-    necessary_threshold_table_file = os.path.join(IMAGES_FOLDER, "xsi_threshold_comparison_table.png")
+    necessary_threshold_table_file = os.path.join(
+        IMAGES_FOLDER, "xsi_threshold_comparison_table.png"
+    )
 
     prefilter_threshold_text = """<b>Pre-Filter Threshold</b><br />
     We study here how varying the values of the Pre-Filter threshold k affects the effectiveness of Kelpie necessary and sufficient explanations.<br /><br />
     """
 
-    prefilter_threshold_necessary_table_title = """Pre-Filter threshold variation results: necessary scenario"""
-    prefilter_threshold_necessary_table_file = os.path.join(IMAGES_FOLDER,
-                                                            "prefilter_threshold_comparison_table_necessary.png")
-    prefilter_threshold_sufficient_table_title = """Pre-Filter threshold variation results: sufficient scenario"""
-    prefilter_threshold_sufficient_table_file = os.path.join(IMAGES_FOLDER,
-                                                             "prefilter_threshold_comparison_table_sufficient.png")
+    prefilter_threshold_necessary_table_title = (
+        """Pre-Filter threshold variation results: necessary scenario"""
+    )
+    prefilter_threshold_necessary_table_file = os.path.join(
+        IMAGES_FOLDER, "prefilter_threshold_comparison_table_necessary.png"
+    )
+    prefilter_threshold_sufficient_table_title = (
+        """Pre-Filter threshold variation results: sufficient scenario"""
+    )
+    prefilter_threshold_sufficient_table_file = os.path.join(
+        IMAGES_FOLDER, "prefilter_threshold_comparison_table_sufficient.png"
+    )
 
     prefilter_type_text = """<b>Pre-Filter Type</b><br />
     We compare here the results obtained using a graph typology-based Pre-Filter with those obtained using an entity type-based Pre-Filter.<br /><br />
     """
 
-    prefilter_type_necessary_table_title = """Pre-Filter type comparison: necessary scenario"""
-    prefilter_type_necessary_table_file = os.path.join(IMAGES_FOLDER, "prefilter_type_comparison_table_necessary.png")
-    prefilter_type_sufficient_table_title = """Pre-Filter type comparison: sufficient scenario"""
-    prefilter_type_sufficient_table_file = os.path.join(IMAGES_FOLDER, "prefilter_type_comparison_table_sufficient.png")
+    prefilter_type_necessary_table_title = (
+        """Pre-Filter type comparison: necessary scenario"""
+    )
+    prefilter_type_necessary_table_file = os.path.join(
+        IMAGES_FOLDER, "prefilter_type_comparison_table_necessary.png"
+    )
+    prefilter_type_sufficient_table_title = (
+        """Pre-Filter type comparison: sufficient scenario"""
+    )
+    prefilter_type_sufficient_table_file = os.path.join(
+        IMAGES_FOLDER, "prefilter_type_comparison_table_sufficient.png"
+    )
 
     flowables.append(Paragraph(intro_text, style=styles["Normal"]))
     flowables.append(Paragraph(environment_text, style=styles["Normal"]))
@@ -137,25 +176,41 @@ def generate_pdf():
     flowables.append(Paragraph(end_to_end_text, style=styles["Normal"]))
     flowables.append(PageBreak())
 
-    flowables.append(Paragraph(end_to_end_necessary_table_title, style=styles["Normal"]))
+    flowables.append(
+        Paragraph(end_to_end_necessary_table_title, style=styles["Normal"])
+    )
     flowables.append(Image(end_to_end_necessary_table_file, width=400, height=175))
     flowables.append(Paragraph("<br /><br />", style=styles["Normal"]))
-    flowables.append(Paragraph(end_to_end_sufficient_table_title, style=styles["Normal"]))
+    flowables.append(
+        Paragraph(end_to_end_sufficient_table_title, style=styles["Normal"])
+    )
     flowables.append(Image(end_to_end_sufficient_table_file, width=400, height=175))
     flowables.append(Paragraph("<br /><br />", style=styles["Normal"]))
 
     flowables.append(Paragraph(explanation_lengths_text, style=styles["Normal"]))
-    flowables.append(Paragraph(explanation_lengths_necessary_table_title, style=styles["Normal"]))
-    flowables.append(Image(explanation_lengths_necessary_table_file, width=400, height=75))
-    flowables.append(Paragraph(explanation_lengths_sufficient_table_title, style=styles["Normal"]))
-    flowables.append(Image(explanation_lengths_sufficient_table_file, width=400, height=75))
+    flowables.append(
+        Paragraph(explanation_lengths_necessary_table_title, style=styles["Normal"])
+    )
+    flowables.append(
+        Image(explanation_lengths_necessary_table_file, width=400, height=75)
+    )
+    flowables.append(
+        Paragraph(explanation_lengths_sufficient_table_title, style=styles["Normal"])
+    )
+    flowables.append(
+        Image(explanation_lengths_sufficient_table_file, width=400, height=75)
+    )
     flowables.append(PageBreak())
 
     flowables.append(Paragraph(minimality_text, style=styles["Normal"]))
-    flowables.append(Paragraph(minimality_necessary_table_title, style=styles["Normal"]))
+    flowables.append(
+        Paragraph(minimality_necessary_table_title, style=styles["Normal"])
+    )
     flowables.append(Image(minimality_necessary_table_file, width=400, height=75))
     flowables.append(Paragraph("<br /><br />", style=styles["Normal"]))
-    flowables.append(Paragraph(minimality_sufficient_table_title, style=styles["Normal"]))
+    flowables.append(
+        Paragraph(minimality_sufficient_table_title, style=styles["Normal"])
+    )
     flowables.append(Image(minimality_sufficient_table_file, width=400, height=75))
     flowables.append(Paragraph("<br /><br />", style=styles["Normal"]))
 
@@ -177,21 +232,33 @@ def generate_pdf():
     flowables.append(Paragraph("<br /><br />", style=styles["Normal"]))
 
     flowables.append(Paragraph(prefilter_threshold_text, style=styles["Normal"]))
-    flowables.append(Paragraph(prefilter_threshold_necessary_table_title, style=styles["Normal"]))
-    flowables.append(Image(prefilter_threshold_necessary_table_file, width=400, height=75))
-    flowables.append(Paragraph(prefilter_threshold_sufficient_table_title, style=styles["Normal"]))
-    flowables.append(Image(prefilter_threshold_sufficient_table_file, width=400, height=75))
+    flowables.append(
+        Paragraph(prefilter_threshold_necessary_table_title, style=styles["Normal"])
+    )
+    flowables.append(
+        Image(prefilter_threshold_necessary_table_file, width=400, height=75)
+    )
+    flowables.append(
+        Paragraph(prefilter_threshold_sufficient_table_title, style=styles["Normal"])
+    )
+    flowables.append(
+        Image(prefilter_threshold_sufficient_table_file, width=400, height=75)
+    )
     flowables.append(PageBreak())
 
     flowables.append(Paragraph(prefilter_type_text, style=styles["Normal"]))
-    flowables.append(Paragraph(prefilter_type_necessary_table_title, style=styles["Normal"]))
+    flowables.append(
+        Paragraph(prefilter_type_necessary_table_title, style=styles["Normal"])
+    )
     flowables.append(Image(prefilter_type_necessary_table_file, width=450, height=65))
-    flowables.append(Paragraph(prefilter_type_sufficient_table_title, style=styles["Normal"]))
+    flowables.append(
+        Paragraph(prefilter_type_sufficient_table_title, style=styles["Normal"])
+    )
     flowables.append(Image(prefilter_type_sufficient_table_file, width=450, height=65))
 
     doc.build(flowables)
     print("Done.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     generate_pdf()

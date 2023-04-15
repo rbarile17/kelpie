@@ -21,27 +21,23 @@ from ...kelpie_dataset import KelpieDataset
 
 class ConvE(Model):
     """
-        The ConvE class provides a Model implementation in PyTorch for the ConvE system.
+    The ConvE class provides a Model implementation in PyTorch for the ConvE system.
 
-        In training or evaluation, ConvE class requires samples to be passed as 2-dimensional np.arrays.
-        Each row corresponds to a sample and contains the integer ids of its head, relation and tail.
-        Only *direct* samples should be passed to the model.
+    In training or evaluation, ConvE class requires samples to be passed as 2-dimensional np.arrays.
+    Each row corresponds to a sample and contains the integer ids of its head, relation and tail.
+    Only *direct* samples should be passed to the model.
 
-        TODO: add documentation about inverse facts and relations
-        TODO: explain that the input must always be direct facts only
+    TODO: add documentation about inverse facts and relations
+    TODO: explain that the input must always be direct facts only
     """
 
-
-    def __init__(self,
-                 dataset: Dataset,
-                 hyperparameters: dict,
-                 init_random = True):
+    def __init__(self, dataset: Dataset, hyperparameters: dict, init_random=True):
         """
-            Constructor for ConvE model.
+        Constructor for ConvE model.
 
-            :param dataset: the Dataset on which to train and evaluate the model
-            :param hyperparameters: hyperparameters dictionary.
-                                    Must contain at least todo: add
+        :param dataset: the Dataset on which to train and evaluate the model
+        :param hyperparameters: hyperparameters dictionary.
+                                Must contain at least todo: add
         """
 
         # note: the init_random parameter is important because when initializing a KelpieModel,
@@ -52,32 +48,48 @@ class ConvE(Model):
 
         self.name = "ConvE"
         self.dataset = dataset
-        self.num_entities = dataset.num_entities                                # number of entities in dataset
-        self.num_relations = dataset.num_relations                              # number of relations in dataset
+        self.num_entities = dataset.num_entities  # number of entities in dataset
+        self.num_relations = dataset.num_relations  # number of relations in dataset
 
-        self.dimension = hyperparameters[DIMENSION]                             # embedding dimension
-        self.input_dropout_rate = hyperparameters[INPUT_DROPOUT]               # rate of the dropout to apply to the input
-        self.feature_map_dropout_rate = hyperparameters[FEATURE_MAP_DROPOUT]    # rate of the dropout to apply to the 2D feature map
-        self.hidden_dropout_rate = hyperparameters[HIDDEN_DROPOUT]              # rate of the dropout to apply after the first hidden layer
-        self.hidden_layer_size = hyperparameters[HIDDEN_LAYER_SIZE]             # size of the hidden layer
+        self.dimension = hyperparameters[DIMENSION]  # embedding dimension
+        self.input_dropout_rate = hyperparameters[
+            INPUT_DROPOUT
+        ]  # rate of the dropout to apply to the input
+        self.feature_map_dropout_rate = hyperparameters[
+            FEATURE_MAP_DROPOUT
+        ]  # rate of the dropout to apply to the 2D feature map
+        self.hidden_dropout_rate = hyperparameters[
+            HIDDEN_DROPOUT
+        ]  # rate of the dropout to apply after the first hidden layer
+        self.hidden_layer_size = hyperparameters[
+            HIDDEN_LAYER_SIZE
+        ]  # size of the hidden layer
 
         # note: before passing them to the convolutional layer, ConvE will reshape the head and relation embedding
-        self.embedding_width = 20                                       # width of the 2D matrix to obtain with the reshaping
-        self.embedding_height = self.dimension // self.embedding_width  # corresponding height based on the embedding dimension
+        self.embedding_width = 20  # width of the 2D matrix to obtain with the reshaping
+        self.embedding_height = (
+            self.dimension // self.embedding_width
+        )  # corresponding height based on the embedding dimension
 
         # convolutional layer parameters
-        self.conv_kernel_shape = (3, 3)     # convolutional kernel shape
-        self.num_conv_filters = 32          # number of convolutional filters
+        self.conv_kernel_shape = (3, 3)  # convolutional kernel shape
+        self.num_conv_filters = 32  # number of convolutional filters
 
         self.input_dropout = torch.nn.Dropout(self.input_dropout_rate).cuda()
-        self.feature_map_dropout = torch.nn.Dropout2d(self.feature_map_dropout_rate).cuda()
+        self.feature_map_dropout = torch.nn.Dropout2d(
+            self.feature_map_dropout_rate
+        ).cuda()
         self.hidden_dropout = torch.nn.Dropout(self.hidden_dropout_rate).cuda()
         self.batch_norm_1 = torch.nn.BatchNorm2d(1).cuda()
         self.batch_norm_2 = torch.nn.BatchNorm2d(self.num_conv_filters).cuda()
         self.batch_norm_3 = torch.nn.BatchNorm1d(self.dimension).cuda()
-        self.convolutional_layer = torch.nn.Conv2d(1, self.num_conv_filters, self.conv_kernel_shape, 1, 0, bias=True).cuda()
-        #self.register_parameter('b', Parameter(torch.zeros(self.num_entities)))     # ?
-        self.hidden_layer = torch.nn.Linear(self.hidden_layer_size, self.dimension).cuda()
+        self.convolutional_layer = torch.nn.Conv2d(
+            1, self.num_conv_filters, self.conv_kernel_shape, 1, 0, bias=True
+        ).cuda()
+        # self.register_parameter('b', Parameter(torch.zeros(self.num_entities)))     # ?
+        self.hidden_layer = torch.nn.Linear(
+            self.hidden_layer_size, self.dimension
+        ).cuda()
 
         # create the embeddings for entities and relations as Parameters.
         # We do not use the torch.Embeddings module here in order to keep the code uniform to the post-training model,
@@ -86,8 +98,13 @@ class ConvE(Model):
         # Each entity embedding and relation embedding is instantiated with size dimension
         # and initialized with Xavier Glorot's normalization
         if init_random:
-            self.entity_embeddings = Parameter(torch.rand(self.num_entities, self.dimension).cuda(), requires_grad=True)
-            self.relation_embeddings = Parameter(torch.rand(self.num_relations, self.dimension).cuda(), requires_grad=True)
+            self.entity_embeddings = Parameter(
+                torch.rand(self.num_entities, self.dimension).cuda(), requires_grad=True
+            )
+            self.relation_embeddings = Parameter(
+                torch.rand(self.num_relations, self.dimension).cuda(),
+                requires_grad=True,
+            )
             xavier_normal_(self.entity_embeddings)
             xavier_normal_(self.relation_embeddings)
 
@@ -100,19 +117,19 @@ class ConvE(Model):
 
     def forward(self, samples: np.array):
         """
-            Perform forward propagation on the passed samples
-            :param samples: a 2-dimensional numpy array containing the samples to use in forward propagation, one per row
-            :return: a tuple containing
-                        - the scores for each passed sample with all possible tails
-                        - a partial result to use in regularization
+        Perform forward propagation on the passed samples
+        :param samples: a 2-dimensional numpy array containing the samples to use in forward propagation, one per row
+        :return: a tuple containing
+                    - the scores for each passed sample with all possible tails
+                    - a partial result to use in regularization
         """
         return self.all_scores(samples)
 
     def score(self, samples: np.array) -> np.array:
         """
-            Compute scores for the passed samples
-            :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-            :return: a numpy array containing the scores of the passed samples
+        Compute scores for the passed samples
+        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
+        :return: a numpy array containing the scores of the passed samples
         """
         # compute scores for each possible tail
         all_scores = self.all_scores(samples)
@@ -124,13 +141,18 @@ class ConvE(Model):
 
         return np.array(samples_scores)
 
-    def score_embeddings(self,
-                         head_embeddings: torch.Tensor,
-                         rel_embeddings: torch.Tensor,
-                         tail_embeddings: torch.Tensor):
-
-        head_embeddings = head_embeddings.view(-1, 1, self.embedding_width, self.embedding_height)
-        rel_embeddings = rel_embeddings.view(-1, 1, self.embedding_width, self.embedding_height)
+    def score_embeddings(
+        self,
+        head_embeddings: torch.Tensor,
+        rel_embeddings: torch.Tensor,
+        tail_embeddings: torch.Tensor,
+    ):
+        head_embeddings = head_embeddings.view(
+            -1, 1, self.embedding_width, self.embedding_height
+        )
+        rel_embeddings = rel_embeddings.view(
+            -1, 1, self.embedding_width, self.embedding_height
+        )
 
         stacked_inputs = torch.cat([head_embeddings, rel_embeddings], 2)
         stacked_inputs = self.batch_norm_1(stacked_inputs)
@@ -148,21 +170,23 @@ class ConvE(Model):
         x = torch.relu(x)
         scores = torch.mm(x, tail_embeddings.transpose(1, 0))
 
-        #x += self.b.expand_as(x)
+        # x += self.b.expand_as(x)
         scores = torch.sigmoid(scores)
         output_scores = torch.diagonal(scores)
 
         return output_scores
 
-
     def criage_first_step(self, samples: np.array):
-
         head_embeddings = self.entity_embeddings[samples[:, 0]]
-        head_embeddings = head_embeddings.view(-1, 1, self.embedding_width, self.embedding_height)
+        head_embeddings = head_embeddings.view(
+            -1, 1, self.embedding_width, self.embedding_height
+        )
 
         # list of relation embeddings for the relations of the heads
         relation_embeddings = self.relation_embeddings[samples[:, 1]]
-        relation_embeddings = relation_embeddings.view(-1, 1, self.embedding_width, self.embedding_height)
+        relation_embeddings = relation_embeddings.view(
+            -1, 1, self.embedding_width, self.embedding_height
+        )
 
         # tail_embeddings = self.entity_embeddings[samples[:, 2]].view(-1, 1, self.embedding_width, self.embedding_height)
 
@@ -183,31 +207,32 @@ class ConvE(Model):
 
         return x
 
-    def criage_last_step(self,
-                         x: torch.Tensor,
-                         tail_embeddings: torch.Tensor):
+    def criage_last_step(self, x: torch.Tensor, tail_embeddings: torch.Tensor):
         scores = torch.mm(x, tail_embeddings.transpose(1, 0))
 
-        #x += self.b.expand_as(x)
+        # x += self.b.expand_as(x)
         scores = torch.sigmoid(scores)
         output_scores = torch.diagonal(scores)
         return output_scores
 
-
     def all_scores(self, samples: np.array) -> np.array:
         """
-            For each of the passed samples, compute scores for all possible tail entities.
-            :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-            :return: a 2-dimensional numpy array that, for each sample, contains a row for each passed sample
-                     and a column for each possible tail
+        For each of the passed samples, compute scores for all possible tail entities.
+        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
+        :return: a 2-dimensional numpy array that, for each sample, contains a row for each passed sample
+                 and a column for each possible tail
         """
         # list of entity embeddings for the heads of the facts
         head_embeddings = self.entity_embeddings[samples[:, 0]]
-        head_embeddings = head_embeddings.view(-1, 1, self.embedding_width, self.embedding_height)
+        head_embeddings = head_embeddings.view(
+            -1, 1, self.embedding_width, self.embedding_height
+        )
 
         # list of relation embeddings for the relations of the heads
         relation_embeddings = self.relation_embeddings[samples[:, 1]]
-        relation_embeddings = relation_embeddings.view(-1, 1, self.embedding_width, self.embedding_height)
+        relation_embeddings = relation_embeddings.view(
+            -1, 1, self.embedding_width, self.embedding_height
+        )
 
         # tail_embeddings = self.entity_embeddings[samples[:, 2]].view(-1, 1, self.embedding_width, self.embedding_height)
 
@@ -226,31 +251,30 @@ class ConvE(Model):
         x = self.batch_norm_3(x)
         x = torch.relu(x)
         x = torch.mm(x, self.entity_embeddings.transpose(1, 0))
-        #x += self.b.expand_as(x)
+        # x += self.b.expand_as(x)
 
         pred = torch.sigmoid(x)
 
         return pred
 
-
     def predict_samples(self, samples: np.array) -> Tuple[Any, Any, Any]:
         """
-            This method takes as an input a tensor of 'direct' samples,
-            runs head and tail prediction on each of them
-            and returns
-                - the obtained scores for direct and inverse version of each sample,
-                - the obtained head and tail ranks for each sample
-                - the list of predicted entities for each sample
-            :param samples: a torch.Tensor containing all the DIRECT samples to predict.
-                            They will be automatically inverted to perform head prediction
+        This method takes as an input a tensor of 'direct' samples,
+        runs head and tail prediction on each of them
+        and returns
+            - the obtained scores for direct and inverse version of each sample,
+            - the obtained head and tail ranks for each sample
+            - the list of predicted entities for each sample
+        :param samples: a torch.Tensor containing all the DIRECT samples to predict.
+                        They will be automatically inverted to perform head prediction
 
-            :return: three dicts mapping each passed direct sample (in Tuple format) respectively to
-                        - the scores of that direct sample and of the corresponding inverse sample;
-                        - the head and tail rank for that sample;
-                        - the head and tail predictions for that sample
+        :return: three dicts mapping each passed direct sample (in Tuple format) respectively to
+                    - the scores of that direct sample and of the corresponding inverse sample;
+                    - the head and tail rank for that sample;
+                    - the head and tail predictions for that sample
         """
 
-        scores, ranks, predictions = [], [], []     # output data structures
+        scores, ranks, predictions = [], [], []  # output data structures
         direct_samples = samples
 
         # assert all samples are direct
@@ -259,8 +283,10 @@ class ConvE(Model):
         # invert samples to perform head predictions
         inverse_samples = self.dataset.invert_samples(direct_samples)
 
-        #obtain scores, ranks and predictions both for direct and inverse samples
-        inverse_scores, head_ranks, head_predictions = self.predict_tails(inverse_samples)
+        # obtain scores, ranks and predictions both for direct and inverse samples
+        inverse_scores, head_ranks, head_predictions = self.predict_tails(
+            inverse_samples
+        )
         direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_samples)
 
         for i in range(direct_samples.shape[0]):
@@ -277,10 +303,10 @@ class ConvE(Model):
 
     def predict_tails(self, samples: np.array) -> Tuple[Any, Any, Any]:
         """
-            Returns filtered scores, ranks and predicted entities for each passed fact.
-            :param samples: a torch.LongTensor of triples (head, relation, tail).
-                          The triples can also be "inverse triples" with (tail, inverse_relation_id, head)
-            :return:
+        Returns filtered scores, ranks and predicted entities for each passed fact.
+        :param samples: a torch.LongTensor of triples (head, relation, tail).
+                      The triples can also be "inverse triples" with (tail, inverse_relation_id, head)
+        :return:
         """
 
         scores, ranks, pred_out = [], [], []
@@ -291,7 +317,9 @@ class ConvE(Model):
 
             all_scores = self.all_scores(batch)
 
-            tail_indexes = torch.tensor(batch[:, 2]).cuda()  # tails of all passed samples
+            tail_indexes = torch.tensor(
+                batch[:, 2]
+            ).cuda()  # tails of all passed samples
 
             # for each sample to predict
             for sample_number, (head_id, relation_id, tail_id) in enumerate(batch):
@@ -307,7 +335,9 @@ class ConvE(Model):
                 all_scores[sample_number, tail_id] = target_tail_score
 
             # this amounts to using ORDINAL policy
-            sorted_values, sorted_indexes = torch.sort(all_scores, dim=1, descending=True)
+            sorted_values, sorted_indexes = torch.sort(
+                all_scores, dim=1, descending=True
+            )
             sorted_indexes = sorted_indexes.cpu().numpy()
 
             for row in sorted_indexes:
@@ -323,24 +353,24 @@ class ConvE(Model):
     def kelpie_model_class(self):
         return KelpieConvE
 
-class KelpieConvE(KelpieModel, ConvE):
-    def __init__(
-            self,
-            dataset: KelpieDataset,
-            model: ConvE,
-            init_tensor=None):
 
-        ConvE.__init__(self,
-                        dataset=dataset,
-                        hyperparameters={DIMENSION: model.dimension,
-                                         INPUT_DROPOUT: model.input_dropout_rate,
-                                         FEATURE_MAP_DROPOUT: model.feature_map_dropout_rate,
-                                         HIDDEN_DROPOUT: model.hidden_dropout_rate,
-                                         HIDDEN_LAYER_SIZE: model.hidden_layer_size},
-                       init_random=False)  # NOTE: this is important! if it is set to True,
-                                            # self.entity_embeddings and self.relation_embeddings will be initialized as Parameters
-                                            # and it will not be possible to overwrite them with mere Tensors
-                                            # such as the one resulting from torch.cat(...) and as frozen_relation_embeddings
+class KelpieConvE(KelpieModel, ConvE):
+    def __init__(self, dataset: KelpieDataset, model: ConvE, init_tensor=None):
+        ConvE.__init__(
+            self,
+            dataset=dataset,
+            hyperparameters={
+                DIMENSION: model.dimension,
+                INPUT_DROPOUT: model.input_dropout_rate,
+                FEATURE_MAP_DROPOUT: model.feature_map_dropout_rate,
+                HIDDEN_DROPOUT: model.hidden_dropout_rate,
+                HIDDEN_LAYER_SIZE: model.hidden_layer_size,
+            },
+            init_random=False,
+        )  # NOTE: this is important! if it is set to True,
+        # self.entity_embeddings and self.relation_embeddings will be initialized as Parameters
+        # and it will not be possible to overwrite them with mere Tensors
+        # such as the one resulting from torch.cat(...) and as frozen_relation_embeddings
 
         # self.model = model
         self.original_entity_id = dataset.original_entity_id
@@ -366,9 +396,10 @@ class KelpieConvE(KelpieModel, ConvE):
         # Therefore kelpie_entity_embedding would not be a Parameter anymore.
 
         self.kelpie_entity_embedding = Parameter(init_tensor.cuda(), requires_grad=True)
-        self.entity_embeddings = torch.cat([frozen_entity_embeddings, self.kelpie_entity_embedding], 0)
+        self.entity_embeddings = torch.cat(
+            [frozen_entity_embeddings, self.kelpie_entity_embedding], 0
+        )
         self.relation_embeddings = frozen_relation_embeddings
-
 
         self.convolutional_layer = copy.deepcopy(model.convolutional_layer)
         self.convolutional_layer.requires_grad = False
@@ -395,9 +426,7 @@ class KelpieConvE(KelpieModel, ConvE):
         self.batch_norm_3.eval()
 
     # Override
-    def predict_samples(self,
-                        samples: np.array,
-                        original_mode: bool = False):
+    def predict_samples(self, samples: np.array, original_mode: bool = False):
         """
         This method overrides the Model predict_samples method
         by adding the possibility to run predictions in original_mode
@@ -414,7 +443,9 @@ class KelpieConvE(KelpieModel, ConvE):
 
         # if we are in original_mode, make sure that the kelpie entity is not featured in the samples to predict
         # otherwise, make sure that the original entity is not featured in the samples to predict
-        forbidden_entity_id = self.kelpie_entity_id if original_mode else self.original_entity_id
+        forbidden_entity_id = (
+            self.kelpie_entity_id if original_mode else self.original_entity_id
+        )
         assert np.isin(forbidden_entity_id, direct_samples[:][0, 2]) == False
 
         # use the ConvE implementation method to obtain scores, ranks and prediction results.
@@ -432,7 +463,9 @@ class KelpieConvE(KelpieModel, ConvE):
             forbidden_indices = np.where(head_predictions == forbidden_entity_id)[0]
             if len(forbidden_indices) > 0:
                 index = forbidden_indices[0]
-                head_predictions = np.concatenate([head_predictions[:index], head_predictions[index + 1:]], axis=0)
+                head_predictions = np.concatenate(
+                    [head_predictions[:index], head_predictions[index + 1 :]], axis=0
+                )
                 if index < head_rank:
                     head_rank -= 1
 
@@ -441,7 +474,9 @@ class KelpieConvE(KelpieModel, ConvE):
             forbidden_indices = np.where(tail_predictions == forbidden_entity_id)[0]
             if len(forbidden_indices) > 0:
                 index = forbidden_indices[0]
-                tail_predictions = np.concatenate([tail_predictions[:index], tail_predictions[index + 1:]], axis=0)
+                tail_predictions = np.concatenate(
+                    [tail_predictions[:index], tail_predictions[index + 1 :]], axis=0
+                )
                 if index < tail_rank:
                     tail_rank -= 1
 
@@ -450,11 +485,8 @@ class KelpieConvE(KelpieModel, ConvE):
 
         return scores, ranks, predictions
 
-
     # Override
-    def predict_sample(self,
-                       sample: np.array,
-                       original_mode: bool = False):
+    def predict_sample(self, sample: np.array, original_mode: bool = False):
         """
         Override the
         :param sample: the DIRECT sample. Will be inverted to perform head prediction
@@ -464,5 +496,7 @@ class KelpieConvE(KelpieModel, ConvE):
 
         assert sample[1] < self.dataset.num_direct_relations
 
-        scores, ranks, predictions = self.predict_samples(np.array([sample]), original_mode)
+        scores, ranks, predictions = self.predict_samples(
+            np.array([sample]), original_mode
+        )
         return scores[0], ranks[0], predictions[0]
