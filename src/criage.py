@@ -60,7 +60,7 @@ class Criage:
 
         """
 
-        top_promising_samples = self.prefilter.top_promising_samples_for(
+        top_promising_samples = self.prefilter.most_promising_samples_for(
             sample_to_explain=sample_to_explain,
             perspective=perspective,
             top_k=num_promising_samples,
@@ -111,7 +111,7 @@ class Criage:
                                 - its value of relevance
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(
+        most_promising_samples = self.prefilter.most_promising_samples_for(
             sample_to_explain=sample_to_explain,
             perspective=perspective,
             top_k=num_promising_samples,

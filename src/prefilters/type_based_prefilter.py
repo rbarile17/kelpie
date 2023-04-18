@@ -50,7 +50,7 @@ class TypeBasedPreFilter(PreFilter):
             self.entity_id_2_relation_vector[h][r] += 1
             self.entity_id_2_relation_vector[t][r + self.dataset.num_relations] += 1
 
-    def top_promising_samples_for(
+    def most_promising_samples_for(
         self,
         sample_to_explain: Tuple[Any, Any, Any],
         perspective: str,

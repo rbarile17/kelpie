@@ -75,7 +75,7 @@ class DataPoisoning:
 
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(
+        most_promising_samples = self.prefilter.most_promising_samples_for(
             sample_to_explain=sample_to_explain,
             perspective=perspective,
             top_k=num_promising_samples,
@@ -126,7 +126,7 @@ class DataPoisoning:
                                     (if they are passed instead of having to be extracted)
         """
 
-        most_promising_samples = self.prefilter.top_promising_samples_for(
+        most_promising_samples = self.prefilter.most_promising_samples_for(
             sample_to_explain=sample_to_explain,
             perspective=perspective,
             top_k=num_promising_samples,

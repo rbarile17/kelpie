@@ -27,7 +27,7 @@ class CriagePreFilter(PreFilter):
                 self.tail_2_train_samples[t] = []
             self.tail_2_train_samples[t].append((h, r, t))
 
-    def top_promising_samples_for(
+    def most_promising_samples_for(
         self,
         sample_to_explain: Tuple[Any, Any, Any],
         perspective: str,

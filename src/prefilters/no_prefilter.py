@@ -32,7 +32,7 @@ class NoPreFilter(PreFilter):
             else:
                 self.entity_id_2_train_samples[t] = [(h, r, t)]
 
-    def top_promising_samples_for(
+    def most_promising_samples_for(
         self,
         sample_to_explain: Tuple[Any, Any, Any],
         perspective: str,

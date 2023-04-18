@@ -24,7 +24,7 @@ class PreFilter:
         self.model = model
         self.dataset = dataset
 
-    def top_promising_samples_for(
+    def most_promising_samples_for(
         self, sample_to_explain: Tuple[Any, Any, Any], perspective: str, top_k=50
     ):
         """
