@@ -66,15 +66,4 @@ class CriageNecessaryExplanationBuilder(NecessaryExplanationBuilder):
 
             rule_2_relevance[tuple([sample_to_remove])] = relevance
 
-            cur_line = (
-                ";".join(self.triple_to_explain)
-                + ";"
-                + ";".join(self.dataset.sample_to_fact(sample_to_remove))
-                + ";"
-                + str(relevance)
-            )
-
-            with open("output_details_1.csv", "a") as output_file:
-                output_file.writelines([cur_line + "\n"])
-
         return sorted(rule_2_relevance.items(), key=lambda x: x[1])[:top_k]

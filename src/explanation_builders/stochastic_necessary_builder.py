@@ -227,33 +227,6 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
             samples_to_remove=nple_to_remove,
         )
 
-        cur_line = (
-            ";".join(self.triple_to_explain)
-            + ";"
-            + ";".join(
-                [";".join(self.dataset.sample_to_fact(x)) for x in nple_to_remove]
-            )
-            + ";"
-            + str(original_target_entity_score)
-            + ";"
-            + str(original_target_entity_rank)
-            + ";"
-            + str(base_pt_target_entity_score)
-            + ";"
-            + str(base_pt_target_entity_rank)
-            + ";"
-            + str(pt_target_entity_score)
-            + ";"
-            + str(pt_target_entity_rank)
-            + ";"
-            + str(relevance)
-            + ";"
-            + str(execution_time)
-        )
-
-        with open("output_details_" + str(rule_length) + ".csv", "a") as output_file:
-            output_file.writelines([cur_line + "\n"])
-
         return relevance
 
     def _preliminary_rule_score(self, rule, sample_2_relevance):

@@ -162,8 +162,4 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
         # add the rule global relevance to all the outlines that refer to this rule
         global_relevance = self._average(rule_2_individual_relevances[rule])
 
-        complete_outlines = [x + ";" + str(global_relevance) + "\n" for x in outlines]
-        with open("output_details_" + str(rule_length) + ".csv", "a") as output_file:
-            output_file.writelines(complete_outlines)
-
         return global_relevance
