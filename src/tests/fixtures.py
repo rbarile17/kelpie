@@ -19,11 +19,6 @@ from src.link_prediction.models import (
 
 
 @pytest.fixture
-def sample_to_explain(dataset):
-    return dataset.fact_to_sample(("/m/03hkch7", "/film/film/genre", "/m/0219x_"))
-
-
-@pytest.fixture
 def dataset():
     return Dataset(name="FB15k-237", separator="\t", load=True)
 
@@ -57,3 +52,10 @@ def model(dataset, hyperparameters):
     model.eval()
 
     return model
+
+
+@pytest.fixture
+def sample_to_explain(dataset):
+    return dataset.fact_to_sample(
+        ("/m/07z2lx", "/award/award_category/category_of", "/m/0gcf2r")
+    )

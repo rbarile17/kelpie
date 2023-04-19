@@ -7,7 +7,7 @@ import numpy
 
 from .config import ROOT
 
-DATA_PATH = os.path.join(ROOT, "data")
+DATA_PATH = "data"
 FB15K = "FB15k"
 FB15K_237 = "FB15k-237"
 WN18 = "WN18"
