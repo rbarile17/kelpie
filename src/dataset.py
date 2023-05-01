@@ -5,16 +5,15 @@ from typing import Tuple
 
 import numpy
 
-from .config import ROOT
-
 DATA_PATH = "data"
 FB15K = "FB15k"
 FB15K_237 = "FB15k-237"
 WN18 = "WN18"
 WN18RR = "WN18RR"
 YAGO3_10 = "YAGO3-10"
+DBPEDIA50 = "DBpedia50"
 
-ALL_DATASET_NAMES = [FB15K, FB15K_237, WN18, WN18RR, YAGO3_10]
+ALL_DATASET_NAMES = [FB15K, FB15K_237, WN18, WN18RR, YAGO3_10, DBPEDIA50]
 
 # relation types
 ONE_TO_ONE = "1-1"
@@ -159,10 +158,10 @@ class Dataset:
         with open(triples_path, "r") as triples_file:
             lines = triples_file.readlines()
             for line in lines:
-                line = html.unescape(
-                    line
-                ).lower()  # this is required for some YAGO3-10 lines
-                head_name, relation_name, tail_name = line.strip().split(separator)
+                if self.name == "DBpedia50":
+                    head_name, tail_name, relation_name = line.strip().split(separator)
+                else:
+                    head_name, relation_name, tail_name = line.strip().split(separator)
 
                 # remove unwanted characters
                 head_name = head_name.replace(",", "").replace(":", "").replace(";", "")
