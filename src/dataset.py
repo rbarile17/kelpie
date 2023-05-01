@@ -95,11 +95,26 @@ class Dataset:
                 self.train_path, self.separator
             )
             self.valid_triples, self.valid_samples = self._read_triples(
-                self.valid_path, self.separator
+                self.valid_path, self.separator, False
             )
             self.test_triples, self.test_samples = self._read_triples(
-                self.test_path, self.separator
+                self.test_path, self.separator, False
             )
+
+            self.train_samples = numpy.unique(self.train_samples, axis=0)
+            self.valid_samples = numpy.unique(self.valid_samples, axis=0)
+            self.test_samples = numpy.unique(self.test_samples, axis=0)
+
+            # order train samples by head, relation and tail
+            self.train_samples = self.train_samples[
+                numpy.lexsort(
+                    (
+                        self.train_samples[:, 2],
+                        self.train_samples[:, 1],
+                        self.train_samples[:, 0],
+                    )
+                )
+            ]
 
             # this is used for O(1) access to training samples
             self.train_samples_set = {(h, r, t) for (h, r, t) in self.train_samples}
@@ -144,7 +159,7 @@ class Dataset:
             # map each relation id to its type (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, or MANY_TO_MANY)
             self._compute_relation_2_type()
 
-    def _read_triples(self, triples_path: str, separator="\t"):
+    def _read_triples(self, triples_path: str, separator="\t", train=True):
         """
         Private method to read the triples (that is, facts and samples) from a textual file
         :param triples_path: the path of the file to read the triples from
@@ -163,43 +178,37 @@ class Dataset:
                 else:
                     head_name, relation_name, tail_name = line.strip().split(separator)
 
-                # remove unwanted characters
-                head_name = head_name.replace(",", "").replace(":", "").replace(";", "")
-                relation_name = (
-                    relation_name.replace(",", "").replace(":", "").replace(";", "")
-                )
-                tail_name = tail_name.replace(",", "").replace(":", "").replace(";", "")
+                if train:
+                    textual_triples.append((head_name, relation_name, tail_name))
 
-                textual_triples.append((head_name, relation_name, tail_name))
-
-                self.entities.add(head_name)
-                self.entities.add(tail_name)
-                self.relations.add(relation_name)
-
-                if head_name in self.entity_name_2_id:
-                    head_id = self.entity_name_2_id[head_name]
+                    self.entities.add(head_name)
+                    self.entities.add(tail_name)
+                    self.relations.add(relation_name)
                 else:
-                    head_id = self._entity_counter
+                    if (
+                        head_name in self.entities
+                        and tail_name in self.entities
+                        and relation_name in self.relations
+                    ):
+                        textual_triples.append((head_name, relation_name, tail_name))
+
+            self._entity_counter, self._relation_counter = 0, 0
+            for entity_name in sorted(list(self.entities)):
+                if entity_name not in self.entity_name_2_id:
+                    self.entity_name_2_id[entity_name] = self._entity_counter
+                    self.entity_id_2_name[self._entity_counter] = entity_name
                     self._entity_counter += 1
-                    self.entity_name_2_id[head_name] = head_id
-                    self.entity_id_2_name[head_id] = head_name
-
-                if relation_name in self.relation_name_2_id:
-                    relation_id = self.relation_name_2_id[relation_name]
-                else:
-                    relation_id = self._relation_counter
+            for relation_name in sorted(list(self.relations)):
+                if relation_name not in self.relation_name_2_id:
+                    self.relation_name_2_id[relation_name] = self._relation_counter
+                    self.relation_id_2_name[self._relation_counter] = relation_name
                     self._relation_counter += 1
-                    self.relation_name_2_id[relation_name] = relation_id
-                    self.relation_id_2_name[relation_id] = relation_name
 
-                if tail_name in self.entity_name_2_id:
-                    tail_id = self.entity_name_2_id[tail_name]
-                else:
-                    tail_id = self._entity_counter
-                    self._entity_counter += 1
-                    self.entity_name_2_id[tail_name] = tail_id
-                    self.entity_id_2_name[tail_id] = tail_name
-
+            for textual_triple in textual_triples:
+                head_name, relation_name, tail_name = textual_triple
+                head_id = self.entity_name_2_id[head_name]
+                relation_id = self.relation_name_2_id[relation_name]
+                tail_id = self.entity_name_2_id[tail_name]
                 data_triples.append((head_id, relation_id, tail_id))
 
         return numpy.array(textual_triples), numpy.array(data_triples).astype("int64")
