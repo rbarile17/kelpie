@@ -2822,7 +2822,7 @@ Hayley_Westenra,{'MusicalArtist'}
 Carrier_Air_Wing_Eleven,{'MilitaryUnit'}
 Kwon_Yuri,"{'MusicalArtist', 'Person'}"
 Dean_Holdsworth,"{'SoccerManager', 'SoccerPlayer'}"
-Soulshock_&_Cutfather,"{'Building', 'Band'}"
+Soulshock_&_Cutfather,"{'Band'}"
 Heshmatabad_Rural_District,"{'AdministrativeRegion', 'Location', 'Settlement'}"
 "Pomona,_California","{'Location', 'City'}"
 Flavius_Moldovan,{'SoccerPlayer'}
@@ -4414,7 +4414,7 @@ Battle_of_Nablus_(1918),{'MilitaryConflict'}
 Eminence_Front,"{'Single', 'Song'}"
 Chase_Watson,{'Athlete'}
 Ronnie_Hudson,{'MusicalArtist'}
-Time_in_Ecuador,{'SportsEvent'}
+Time_in_Ecuador,set()
 NK_Olimpija_Ljubljana_(defunct),{'SoccerClub'}
 Posta_Rangers_F.C.,{'SoccerClub'}
 Storm_Bird,"{'RaceHorse', 'Horse'}"
@@ -7923,7 +7923,7 @@ Twin_Peaks,{'TelevisionShow'}
 Helmut_Frink,set()
 Manduro,"{'RaceHorse', 'Horse'}"
 Jajang_Mulyana,{'SoccerPlayer'}
-Bill_Bennett_(politician),{'TimePeriod'}
+Bill_Bennett_(politician),{'Politician'}
 A.R.C._(album),{'Album'}
 Centre-Val_de_Loire,"{'AdministrativeRegion', 'Location', 'Settlement'}"
 Solid_Gold_(album),{'Album'}
@@ -10153,7 +10153,7 @@ Russo-Persian_War_(1804–13),{'MilitaryConflict'}
 Rino_Gaetano,{'MusicalArtist'}
 Kung_Fu_Dunk,{'Film'}
 Mitsubishi_Lancer_Evolution,{'Automobile'}
-Germany,"{'Location', 'Country', 'Person'}"
+Germany,"{'Location', 'Country'}"
 Irkut_Corporation,{'Company'}
 Utricularia,"{'Insect', 'Plant'}"
 Mario_Millo,{'MusicalArtist'}
@@ -11258,7 +11258,7 @@ Oligohymenophorea,set()
 Enoch_T._Nix,{'Person'}
 But_Not_in_Vain,{'Film'}
 Gian_Piero_Ghio,{'SoccerManager'}
-Bolivia,"{'MusicalArtist', 'Location', 'Country'}"
+Bolivia,"{'Location', 'Country'}"
 Alfred_DeGaetano,"{'Film', 'Person'}"
 Era_Vulgaris_(album),{'Album'}
 Mississippi_Fred_McDowell,{'MusicalArtist'}
@@ -12958,7 +12958,7 @@ The_Rising_Force,{'Book'}
 Rizwan_Hussain,{'Person'}
 Richard_W._Jones,{'Scientist'}
 A_Wind_in_the_Door,{'Book'}
-José_Miguel_de_Velasco_Franco,{'TimePeriod'}
+José_Miguel_de_Velasco_Franco,{'Politician'}
 Colpospira,"{'Mollusca', 'Insect'}"
 This_Is..._Icona_Pop,{'Album'}
 Louis_Althusser,{'Philosopher'}
@@ -21135,7 +21135,7 @@ Wait_for_Me_(The_Pigeon_Detectives_album),{'Album'}
 Fort_Simpson,"{'Location', 'Village'}"
 Steep_Canyon_Rangers,{'Band'}
 Protobrotula,{'Fish'}
-British_Mandate_for_Palestine_(legal_instrument),{'SportsLeague'}
+British_Mandate_for_Palestine_(legal_instrument),set()
 Svetislav_Perduv,"{'SoccerManager', 'SoccerPlayer'}"
 CD_Alcalá,"{'SportsTeam', 'SoccerClub'}"
 La_Vendetta_(TV_series),{'TelevisionShow'}
@@ -22153,7 +22153,7 @@ Ian_McCulloch_(singer),{'MusicalArtist'}
 Gamia,{'Insect'}
 Aroma_compound,{'ChemicalCompound'}
 Penthides,{'Insect'}
-Yoo_Seung-jun,"{'MusicalArtist', 'Star'}"
+Yoo_Seung-jun,"{'MusicalArtist'}"
 Ilya_Arkhipovich_Vlasenko,{'Person'}
 Return_to_Oz,{'Film'}
 Combined_statistical_area,set()
@@ -22377,7 +22377,7 @@ Denis_Payton,{'MusicalArtist'}
 Diego_Andrés_Bermúdez,{'SoccerPlayer'}
 War_of_1812,{'MilitaryConflict'}
 Parsabad_County,"{'AdministrativeRegion', 'Location', 'Settlement'}"
-The_Holocaust,"{'MilitaryConflict', 'Person'}"
+The_Holocaust,"{'MilitaryConflict'}"
 Twisted_(Star_Trek:_Voyager),{'TelevisionEpisode'}
 LG_Corporation,{'Company'}
 Together_(Eric_Kloss_and_Barry_Miles_album),{'Album'}
