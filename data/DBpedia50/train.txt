@@ -253,7 +253,6 @@ Stephen_Báthory	Belarus	deathPlace
 Spice_Girls	Geri_Halliwell	formerBandMember
 Salò,_or_the_120_Days_of_Sodom	Ennio_Morricone	musicComposer
 Saint_George	Anglican_Communion	veneratedIn
-Saint_David	Anglicanism	veneratedIn
 Saint_David	Pembrokeshire	majorShrine
 Saint_David	Pembrokeshire	birthPlace
 Saint_David	Pembrokeshire	deathPlace
@@ -1049,7 +1048,6 @@ Sam_Cooke	RCA_Records	recordLabel
 Dusty_Springfield	North_London	birthPlace
 Vasily_II_of_Moscow	Grand_Duchy_of_Moscow	birthPlace
 Vasily_II_of_Moscow	Grand_Duchy_of_Moscow	deathPlace
-Michigan_Terminal_System	Michigan_Terminal_System	developer
 Michigan_Terminal_System	Fortran	programmingLanguage
 Michigan_Terminal_System	Michigan_Terminal_System	programmingLanguage
 Bugsy_Siegel	Racket_(crime)	occupation
@@ -16176,7 +16174,6 @@ Wild_Wild_West_(Kool_Moe_Dee_song)	How_Ya_Like_Me_Now	album
 Wild_Wild_West_(Kool_Moe_Dee_song)	Hip_hop_music	genre
 18th_Division_(German_Empire)	Battle_of_Passchendaele	battle
 Toyota_SA	Toyota_SA	successor
-Toyota_SA	Toyota_SA	relatedMeanOfTransportation
 Mehdi_Chamran	Iran	birthPlace
 Mehdi_Chamran	Iran	country
 Cross_Season	Brightdown	subsequentWork
@@ -17343,7 +17340,6 @@ Fábio_Penchel_de_Siqueira	Associação_Portuguesa_de_Desportos	team
 Winning_Moves	London	location
 Acromantinae	Insect	class
 Mario_Urrutia	Cincinnati_Bengals	formerTeam
-Mario_Urrutia	Kentucky_Wildcats_football	birthPlace
 Aous_Shakra	Mandatory_Palestine	birthPlace
 Aous_Shakra	Amman	deathPlace
 Aous_Shakra	Mandatory_Palestine	birthPlace
@@ -18664,7 +18660,6 @@ Flying_Dagger	Gloria_Yip	starring
 Prima_J_(album)	Ron_Fair	producer
 Prima_J_(album)	Hip_hop_music	genre
 Manuel_Uribe_Ángel	Colombians	nationality
-William_Hutchinson_(Australian_politician)	Division_of_Indi	region
 Blood_Raw	Panama_City,_Florida	hometown
 Blood_Raw	Hip_hop_music	genre
 The_No_Comprendo	Synthpop	genre
@@ -22580,7 +22575,6 @@ Jumpin_Joseph	Canadian_Horse_of_the_Year	award
 From_the_Hut,_to_the_Projects,_to_the_Mansion	Hip_hop_music	genre
 From_the_Hut,_to_the_Projects,_to_the_Mansion	Folk_music	genre
 Jonathan_Cecil	London	birthPlace
-Jonathan_Cecil	Charing_Cross_Hospital	deathPlace
 Jonathan_Cecil	London	deathPlace
 Do_Ya_Do_Ya_(Wanna_Please_Me)	Samantha_Fox	musicalBand
 Do_Ya_Do_Ya_(Wanna_Please_Me)	London	recordedIn
@@ -25984,7 +25978,6 @@ Restless_(Switchfoot_song)	Switchfoot	musicalBand
 Restless_(Switchfoot_song)	Lowercase_people_records	recordLabel
 Kieron_Freeman	Nottingham_Forest_F.C.	team
 William_Richardson_Linton	White_people	ethnicity
-Idol_Puerto_Rico	Idol_Puerto_Rico	showJudge
 Idol_Puerto_Rico	720p	format
 Dan_L._Hendricks	Count_Fleet_Sprint_Handicap	race
 Dan_L._Hendricks	Rancho_Bernardo_Handicap	race
@@ -26538,7 +26531,6 @@ Oldwig_von_Natzmer	Germany	deathPlace
 Arthur_Beauchesne	Carleton-sur-Mer	birthPlace
 Nebojša_Vignjević	FK_Rudar_Pljevlja	managerClub
 Fayçal_Fajr	FC_Rouen	team
-13th_Cavalry_Brigade_(British_Indian_Army)	Presidencies_and_provinces_of_British_India	militaryBranch
 Thuppakki	Vidyut_Jamwal	starring
 Rabin_Deb	University_of_Calcutta	almaMater
 Tohir_Sodiqov	Soviet_Union	birthPlace
@@ -28603,7 +28595,6 @@ Manny_(TV_series)	South_Korea	country
 Manny_(TV_series)	Korean_language	language
 Remedy_(Crookers_song)	Switch_(house_DJ)	producer
 Anjum_Rajabali	Mumbai	residence
-1987_Munster_Senior_Hurling_Championship_Final	Tipperary_GAA	team
 Bad_Blood_(Bastille_album)	Synthpop	genre
 Mats_Møller_Dæhli	Lyn_Fotball	team
 Mats_Møller_Dæhli	Stabæk_Fotball	team
