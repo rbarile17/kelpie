@@ -1,14 +1,10 @@
-from pathlib import Path
 from SPARQLWrapper import SPARQLWrapper, JSON
 
-from ..dataset import DATA_PATH, DBPEDIA50
+from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
+
 from ..dataset import Dataset
 
-DATA_PATH = Path(DATA_PATH)
-DBPEDIA50_PATH = DATA_PATH / DBPEDIA50
-DBPEDIA50_REASONED_PATH = DBPEDIA50_PATH / "reasoned"
-
-dataset = Dataset(name="DBpedia50", separator="\t", load=True)
+dataset = Dataset(dataset="DBpedia50")
 
 sparql = SPARQLWrapper(endpoint="http://dbpedia.org/sparql")
 sparql.setReturnFormat(JSON)

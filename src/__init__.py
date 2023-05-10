@@ -1,0 +1,7 @@
+from pathlib import Path
+
+from .dataset import DATA_PATH, DBPEDIA50
+
+DATA_PATH = Path(DATA_PATH)
+DBPEDIA50_PATH = DATA_PATH / DBPEDIA50
+DBPEDIA50_REASONED_PATH = DBPEDIA50_PATH / "reasoned"
