@@ -48,7 +48,7 @@ def model(dataset, hyperparameters):
     )
 
     model.to("cuda")
-    model.load_state_dict(torch.load("./stored_models/ComplEx_FB15k-237.pt"))
+    model.load_state_dict(torch.load("./models/ComplEx_FB15k-237.pt"))
     model.eval()
 
     return model
