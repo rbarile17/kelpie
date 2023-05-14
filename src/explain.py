@@ -9,7 +9,12 @@ from .dataset import ALL_DATASET_NAMES, Dataset
 from .kelpie import Kelpie
 from .data_poisoning import DataPoisoning
 from .criage import Criage
-from .prefilters import TOPOLOGY_PREFILTER, TYPE_PREFILTER, NO_PREFILTER
+from .prefilters import (
+    TOPOLOGY_PREFILTER,
+    TYPE_PREFILTER,
+    NO_PREFILTER,
+    WEIGHTED_TOPOLOGY_PREFILTER,
+)
 from .link_prediction.models import ComplEx
 from .link_prediction.models import (
     LEARNING_RATE,
@@ -124,7 +129,12 @@ parser.add_argument(
     help="The relevance acceptance threshold to use",
 )
 
-prefilters = [TOPOLOGY_PREFILTER, TYPE_PREFILTER, NO_PREFILTER]
+prefilters = [
+    TOPOLOGY_PREFILTER,
+    TYPE_PREFILTER,
+    NO_PREFILTER,
+    WEIGHTED_TOPOLOGY_PREFILTER,
+]
 parser.add_argument(
     "--prefilter",
     choices=prefilters,

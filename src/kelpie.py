@@ -1,8 +1,18 @@
 from typing import Tuple, Any
 from .dataset import Dataset
 
-from .prefilters import TYPE_PREFILTER, TOPOLOGY_PREFILTER, NO_PREFILTER
-from .prefilters import NoPreFilter, TypeBasedPreFilter, TopologyPreFilter
+from .prefilters import (
+    TYPE_PREFILTER,
+    TOPOLOGY_PREFILTER,
+    NO_PREFILTER,
+    WEIGHTED_TOPOLOGY_PREFILTER,
+)
+from .prefilters import (
+    NoPreFilter,
+    TypeBasedPreFilter,
+    TopologyPreFilter,
+    WeightedTopologyPreFilter,
+)
 from .relevance_engines import PostTrainingEngine
 from .link_prediction.models import Model
 from .explanation_builders import (
@@ -51,6 +61,8 @@ class Kelpie:
             self.prefilter = TypeBasedPreFilter(model=model, dataset=dataset)
         elif prefilter_type == NO_PREFILTER:
             self.prefilter = NoPreFilter(model=model, dataset=dataset)
+        elif prefilter_type == WEIGHTED_TOPOLOGY_PREFILTER:
+            self.prefilter = WeightedTopologyPreFilter(model=model, dataset=dataset)
         else:
             self.prefilter = TopologyPreFilter(model=model, dataset=dataset)
 
