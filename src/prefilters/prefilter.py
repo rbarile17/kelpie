@@ -3,6 +3,7 @@ from ..dataset import Dataset
 from ..link_prediction.models import Model
 
 TOPOLOGY_PREFILTER = "topology_based"
+WEIGHTED_TOPOLOGY_PREFILTER = "weighted_topology_based"
 TYPE_PREFILTER = "type_based"
 NO_PREFILTER = "none"
 
