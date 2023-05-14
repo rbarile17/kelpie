@@ -1,6 +1,6 @@
 from typing import Tuple, Any
 from .explanation_builder import NecessaryExplanationBuilder
-from ..dataset import Dataset
+from ..data import Dataset
 from ..relevance_engines import CriageEngine
 from ..link_prediction.models import Model
 
@@ -16,7 +16,7 @@ class CriageNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         model: Model,
         dataset: Dataset,
         hyperparameters: dict,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
     ):
         """
@@ -28,28 +28,28 @@ class CriageNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         :param perspective
         """
 
-        super().__init__(model, dataset, sample_to_explain, perspective, 1)
+        super().__init__(model, dataset, triple_to_explain, perspective, 1)
 
         self.engine = CriageEngine(
             model=model, dataset=dataset, hyperparameters=hyperparameters
         )
 
-    def build_explanations(self, samples_to_remove: list, top_k: int = 10):
+    def build_explanations(self, triples_to_remove: list, top_k: int = 10):
         rule_2_relevance = {}
 
-        (head_to_explain, _, tail_to_explain) = self.sample_to_explain
+        (head_to_explain, _, tail_to_explain) = self.triple_to_explain
 
-        for i, sample_to_remove in enumerate(samples_to_remove):
+        for i, triple_to_remove in enumerate(triples_to_remove):
             print(
-                "\n\tComputing relevance for sample "
+                "\n\tComputing relevance for triple "
                 + str(i)
                 + " on "
-                + str(len(samples_to_remove))
+                + str(len(triples_to_remove))
                 + ": "
-                + self.dataset.printable_sample(sample_to_remove)
+                + self.dataset.printable_triple(triple_to_remove)
             )
 
-            tail_to_remove = sample_to_remove[2]
+            tail_to_remove = triple_to_remove[2]
 
             if tail_to_remove == head_to_explain:
                 perspective = "head"
@@ -59,11 +59,11 @@ class CriageNecessaryExplanationBuilder(NecessaryExplanationBuilder):
                 raise ValueError
 
             relevance = self.engine.removal_relevance(
-                sample_to_explain=self.sample_to_explain,
+                triple_to_explain=self.triple_to_explain,
                 perspective=perspective,
-                samples_to_remove=[sample_to_remove],
+                triples_to_remove=[triple_to_remove],
             )
 
-            rule_2_relevance[tuple([sample_to_remove])] = relevance
+            rule_2_relevance[tuple([triple_to_remove])] = relevance
 
         return sorted(rule_2_relevance.items(), key=lambda x: x[1])[:top_k]

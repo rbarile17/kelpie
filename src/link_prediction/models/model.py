@@ -4,7 +4,7 @@ import torch
 from typing import Any, Tuple
 
 from torch import nn
-from ...dataset import Dataset
+from ...data import Dataset
 
 # KEYS FOR SUPPORTED HYPERPARAMETERS (to use in hyperparameter dicts)
 DIMENSION = "dimension"  # embedding dimension, when both entity and relation embeddings have same dimension
@@ -35,7 +35,7 @@ DECAY_1 = "decay_1"  # Adam decay 1
 DECAY_2 = "decay_2"  # Adam decay 2
 
 MARGIN = "margin"  # pairwise margin-based loss margin
-NEGATIVE_SAMPLES_RATIO = "negative_samples"  # number of negative samples to obtain, via corruption, for each positive sample
+NEGATIVE_TRIPLES_RATIO = "negative_triples"  # number of negative triples to obtain, via corruption, for each positive triple
 
 REGULARIZER_NAME = "regularizer"  # name of the regularization technique: N3
 REGULARIZER_WEIGHT = "regularizer_weight"  # weight for the regularization in the loss
@@ -52,7 +52,7 @@ class Model(nn.Module):
         - store the embeddings for entities and relations
         - implement the specific scoring function for that link prediction model
         - offer methods that use that scoring function
-            either to run prediction on one or multiple samples, or to run forward propagation in training
+            either to run prediction on one or multiple triples, or to run forward propagation in training
 
     On the contrary, training and evaluation are not performed directly by the model class,
     but require the use of an Optimizer or an Evaluator object respectively.
@@ -60,8 +60,8 @@ class Model(nn.Module):
     All models work with entity and relation ids directly (not with their names),
     that they found from the Dataset object used to initialize the Model.
 
-    Whenever a Model method requires samples, it accepts them in the form of 2-dimensional numpy.arrays,
-    where each row corresponds to a sample and contains the integer ids of its head, relation and tail.
+    Whenever a Model method requires triples, it accepts them in the form of 2-dimensional numpy.arrays,
+    where each row corresponds to a triple and contains the integer ids of its head, relation and tail.
     """
 
     def __init__(self, dataset: Dataset):
@@ -75,77 +75,77 @@ class Model(nn.Module):
         """
         pass
 
-    def score(self, samples: numpy.array) -> numpy.array:
+    def score(self, triples: numpy.array) -> numpy.array:
         """
-        This method computes and returns the plausibility scores for a collection of samples.
+        This method computes and returns the plausibility scores for a collection of triples.
 
-        :param samples: a numpy array containing all the samples to score
+        :param triples: a numpy array containing all the triples to score
         :return: the computed scores, as a numpy array
         """
         pass
 
     # override
-    def all_scores(self, samples: numpy.array):
+    def all_scores(self, triples: numpy.array):
         """
-        This method computes, For each of the passed samples, the score for all possible tail entities.
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a 2-dimensional numpy array that, for each sample, contains a row for each passed sample
+        This method computes, For each of the passed triples, the score for all possible tail entities.
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a 2-dimensional numpy array that, for each triple, contains a row for each passed triple
                  and a column for each possible tail
         """
 
         pass
 
-    def forward(self, samples: numpy.array):
+    def forward(self, triples: numpy.array):
         """
-        This method performs forward propagation for a collection of samples.
-        This method is only used in training, when an Optimizer calls it passing the current batch of samples.
+        This method performs forward propagation for a collection of triples.
+        This method is only used in training, when an Optimizer calls it passing the current batch of triples.
 
         This method returns all the items needed by the Optimizer to perform gradient descent in this training step.
         Such items heavily depend on the specific Model implementation;
-        they usually include the scores for the samples (in a form usable by the ML framework, e.g. torch.Tensors)
+        they usually include the scores for the triples (in a form usable by the ML framework, e.g. torch.Tensors)
         but may also include other stuff (e.g. the involved embeddings themselves, that the Optimizer
         may use to compute regularization factors)
 
-        :param samples: a numpy array containing all the samples to perform forward propagation on
+        :param triples: a numpy array containing all the triples to perform forward propagation on
         """
         pass
 
-    def predict_samples(self, samples: numpy.array) -> Tuple[Any, Any, Any]:
+    def predict_triples(self, triples: numpy.array) -> Tuple[Any, Any, Any]:
         """
-        This method performs prediction on a collection of samples, and returns the corresponding
+        This method performs prediction on a collection of triples, and returns the corresponding
         scores, ranks and prediction lists.
 
-        All the passed samples must be DIRECT samples in the original dataset.
-        (if the Model supports inverse samples as well,
-        it should invert the passed samples while running this method)
+        All the passed triples must be DIRECT triples in the original dataset.
+        (if the Model supports inverse triples as well,
+        it should invert the passed triples while running this method)
 
-        :param samples: the direct samples to predict, in numpy array format
+        :param triples: the direct triples to predict, in numpy array format
         :return: this method returns three lists:
-                    - the list of scores for the passed samples,
+                    - the list of scores for the passed triples,
                                 OR IF THE MODEL SUPPORTS INVERSE FACTS
-                        the list of couples <direct sample score, inverse sample score>,
-                        where the i-th score refers to the i-th sample in the input samples.
+                        the list of couples <direct triple score, inverse triple score>,
+                        where the i-th score refers to the i-th triple in the input triples.
 
                     - the list of couples (head rank, tail rank)
-                        where the i-th couple refers to the i-th sample in the input samples.
+                        where the i-th couple refers to the i-th triple in the input triples.
 
                     - the list of couples (head_predictions, tail_predictions)
-                        where the i-th couple refers to the i-th sample in the input samples.
-                        The head_predictions and tail_predictions for each sample
-                        are numpy arrays containing all the predicted heads and tails respectively for that sample.
+                        where the i-th couple refers to the i-th triple in the input triples.
+                        The head_predictions and tail_predictions for each triple
+                        are numpy arrays containing all the predicted heads and tails respectively for that triple.
         """
         pass
 
-    def predict_sample(self, sample: numpy.array) -> Tuple[Any, Any, Any]:
+    def predict_triple(self, triple: numpy.array) -> Tuple[Any, Any, Any]:
         """
-        This method performs prediction on one (direct) sample, and returns the corresponding
+        This method performs prediction on one (direct) triple, and returns the corresponding
         score, ranks and prediction lists.
 
-        :param sample: the sample to predict, as a numpy array.
+        :param triple: the triple to predict, as a numpy array.
         :return: this method returns 3 items:
-                - the sample score
+                - the triple score
                          OR IF THE MODEL SUPPORTS INVERSE FACTS
-                  a couple containing the scores of the sample and of its inverse
+                  a couple containing the scores of the triple and of its inverse
 
                 - a couple containing the head rank and the tail rank
 
@@ -156,9 +156,9 @@ class Model(nn.Module):
                     [NB: the target tail will be in this numpy array in position tail_rank-1]
         """
 
-        assert sample[1] < self.dataset.num_direct_relations
+        assert triple[1] < self.dataset.num_relations
 
-        scores, ranks, predictions = self.predict_samples(numpy.array([sample]))
+        scores, ranks, predictions = self.predict_triples(numpy.array([triple]))
         return scores[0], ranks[0], predictions[0]
 
     def kelpie_model_class(self):
@@ -185,12 +185,12 @@ class KelpieModel(Model):
     """
 
     # override
-    def predict_samples(self, samples: numpy.array, original_mode: bool = False):
+    def predict_triples(self, triples: numpy.array, original_mode: bool = False):
         """
         This method interface overrides the superclass method by adding the option to run predictions in original_mode,
         which means ignoring in any circumstances the additional "fake" kelpie entity.
 
-        :param samples: the DIRECT samples. They will be inverted to perform head prediction
+        :param triples: the DIRECT triples. They will be inverted to perform head prediction
         :param original_mode: a boolean flag specifying whether to work in original_mode or to use the kelpie entity
 
         :return: a numpy array containing
@@ -198,12 +198,12 @@ class KelpieModel(Model):
         pass
 
     # Override
-    def predict_sample(self, sample: numpy.array, original_mode: bool = False):
+    def predict_triple(self, triple: numpy.array, original_mode: bool = False):
         """
         This method interface overrides the superclass method by adding the option to run predictions in original_mode,
         which means ignoring in any circumstances the additional "fake" kelpie entity.
 
-        :param sample: the DIRECT sample. It will be inverted to perform head prediction
+        :param triple: the DIRECT triple. It will be inverted to perform head prediction
         :param original_mode: a boolean flag specifying whether to work in original_mode or to use the kelpie entity
 
         :return:

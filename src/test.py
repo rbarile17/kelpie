@@ -1,7 +1,8 @@
 import argparse
 import torch
 
-from .dataset import ALL_DATASET_NAMES, Dataset
+from .data import ALL_DATASET_NAMES
+from .data import Dataset
 
 from .link_prediction.evaluation import Evaluator
 from .link_prediction.models import ComplEx
@@ -26,7 +27,7 @@ parser.add_argument("--model_path", help="path to the model to load", required=T
 args = parser.parse_args()
 
 print("Loading %s dataset..." % args.dataset)
-dataset = Dataset(name=args.dataset, separator="\t", load=True)
+dataset = Dataset(dataset=args.dataset)
 
 hyperparameters = {DIMENSION: args.dimension, INIT_SCALE: args.init_scale}
 print("Initializing model...")
@@ -39,7 +40,7 @@ model.eval()
 
 print("Evaluating model...")
 mrr, h1, h10, mr = Evaluator(model=model).evaluate(
-    samples=dataset.test_samples, write_output=True
+    triples=dataset.testing_triples, write_output=True
 )
 print("\tTest Hits@1: %f" % h1)
 print("\tTest Hits@10: %f" % h10)

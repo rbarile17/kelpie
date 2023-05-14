@@ -21,9 +21,9 @@ from ..models import ConvE
 class BCEOptimizer(Optimizer):
     """
     This optimizer relies on BCE loss.
-    Instead of considering each training sample as the "unit" for training,
-    it groups training samples into couples (h, r) -> [all t for which <h, r, t> in training set].
-    Each couple (h, r) with the corresponding tails is treated as if it was one sample.
+    Instead of considering each training triple as the "unit" for training,
+    it groups training triples into couples (h, r) -> [all t for which <h, r, t> in training set].
+    Each couple (h, r) with the corresponding tails is treated as if it was one triple.
 
     When passing them to the loss...
 
@@ -64,15 +64,15 @@ class BCEOptimizer(Optimizer):
 
     def train(
         self,
-        train_samples: np.array,
+        training_triples: np.array,
         save_path: str = None,
         evaluate_every: int = -1,
-        valid_samples: np.array = None,
+        valid_triples: np.array = None,
     ):
-        all_training_samples = np.vstack(
-            (train_samples, self.dataset.invert_samples(train_samples))
+        all_training_triples = np.vstack(
+            (training_triples, self.dataset.invert_triples(training_triples))
         )
-        er_vocab = self.extract_er_vocab(all_training_samples)
+        er_vocab = self.extract_er_vocab(all_training_triples)
         er_vocab_pairs = list(er_vocab.keys())
 
         self.model.cuda()
@@ -86,12 +86,12 @@ class BCEOptimizer(Optimizer):
 
             if (
                 evaluate_every > 0
-                and valid_samples is not None
+                and valid_triples is not None
                 and e % evaluate_every == 0
             ):
                 self.model.eval()
                 mrr, h1, h10, mr = self.evaluator.evaluate(
-                    samples=valid_samples, write_output=False
+                    triples=valid_triples, write_output=False
                 )
 
                 print("\tValidation Hits@1: %f" % h1)
@@ -109,10 +109,10 @@ class BCEOptimizer(Optimizer):
             torch.save(self.model.state_dict(), save_path)
             print("\t done.")
 
-    def extract_er_vocab(self, samples):
+    def extract_er_vocab(self, triples):
         er_vocab = defaultdict(list)
-        for sample in samples:
-            er_vocab[(sample[0], sample[1])].append(sample[2])
+        for triple in triples:
+            er_vocab[(triple[0], triple[1])].append(triple[2])
         return er_vocab
 
     def extract_batch(self, er_vocab, er_vocab_pairs, batch_start, batch_size):

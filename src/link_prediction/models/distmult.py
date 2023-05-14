@@ -5,8 +5,7 @@ import torch
 from torch.nn import Parameter
 
 from .model import Model, DIMENSION, INIT_SCALE, KelpieModel
-from ...dataset import Dataset
-from ...kelpie_dataset import KelpieDataset
+from ...data import Dataset, KelpieDataset
 
 
 class DistMult(Model):
@@ -15,9 +14,9 @@ class DistMult(Model):
     This implementation is inspired by the work of authors Lacroix, Usunier and Obozinski with bilinear models
     such as ComplEx and CP in their paper "Canonical Tensor Decomposition for Knowledge Base Completion".
 
-    In training or evaluation, our DistMult class requires samples to be passed as 2-dimensional np.arrays.
-    Each row corresponds to a sample and contains the integer ids of its head, relation and tail.
-    Only *direct* samples should be passed to the model.
+    In training or evaluation, our DistMult class requires triples to be passed as 2-dimensional np.arrays.
+    Each row corresponds to a triple and contains the integer ids of its head, relation and tail.
+    Only *direct* triples should be passed to the model.
 
     TODO: add documentation about inverse facts and relations
     TODO: explain that the input must always be direct facts only
@@ -42,9 +41,7 @@ class DistMult(Model):
         self.name = "DistMult"
         self.dataset = dataset
         self.num_entities = dataset.num_entities  # number of entities in dataset
-        self.num_relations = (
-            dataset.num_relations
-        )  # number of all relations in dataset (including the inverted ones)
+        self.num_relations = 2 * dataset.num_relations
         self.dimension = hyperparameters[DIMENSION]  # embedding dimension
         self.init_scale = hyperparameters[
             INIT_SCALE
@@ -75,20 +72,20 @@ class DistMult(Model):
         """
         return False
 
-    def score(self, samples: np.array) -> np.array:
+    def score(self, triples: np.array) -> np.array:
         """
-        Compute scores for the passed samples
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a numpy array containing the scores of the passed samples
+        Compute scores for the passed triples
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a numpy array containing the scores of the passed triples
         """
         head_embeddings = self.entity_embeddings[
-            samples[:, 0]
+            triples[:, 0]
         ]  # list of entity embeddings for the heads of the facts
         rel_embeddings = self.relation_embeddings[
-            samples[:, 1]
+            triples[:, 1]
         ]  # list of relation embeddings for the relations of the heads
         tail_embeddings = self.entity_embeddings[
-            samples[:, 2]
+            triples[:, 2]
         ]  # list of entity embeddings for the tails of the facts
 
         return (
@@ -113,7 +110,7 @@ class DistMult(Model):
         :return: a numpy array containing the scores computed for the passed triples of embeddings
         """
 
-        # NOTE: this method is extremely important, because apart from being called by the DistMult score(samples) method
+        # NOTE: this method is extremely important, because apart from being called by the DistMult score(triples) method
         # it is also used to perform the operations of paper "Data Poisoning Attack against Knowledge Graph Embedding"
         # that we use as a baseline and as a heuristic for our work.
 
@@ -121,41 +118,41 @@ class DistMult(Model):
             (head_embeddings * rel_embeddings * tail_embeddings), 1, keepdim=True
         )
 
-    def all_scores(self, samples: np.array):
+    def all_scores(self, triples: np.array):
         """
-        For each of the passed samples, compute scores for all possible tail entities.
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a 2-dimensional numpy array that, for each sample, contains a row for each passed sample
+        For each of the passed triples, compute scores for all possible tail entities.
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a 2-dimensional numpy array that, for each triple, contains a row for each passed triple
                  and a column for each possible tail
         """
 
         head_embeddings = self.entity_embeddings[
-            samples[:, 0]
+            triples[:, 0]
         ]  # list of entity embeddings for the heads of the facts
         rel_embeddings = self.relation_embeddings[
-            samples[:, 1]
+            triples[:, 1]
         ]  # list of relation embeddings for the relations of the heads
         to_score_embeddings = self.entity_embeddings  # list of all entity embeddings
 
         return (head_embeddings * rel_embeddings) @ to_score_embeddings.transpose(0, 1)
 
-    def forward(self, samples: np.array):
+    def forward(self, triples: np.array):
         """
-        Perform forward propagation on the passed samples
-        :param samples: a 2-dimensional numpy array containing the samples to use in forward propagation, one per row
+        Perform forward propagation on the passed triples
+        :param triples: a 2-dimensional numpy array containing the triples to use in forward propagation, one per row
         :return: a tuple containing
-                    - the scores for each passed sample with all possible tails
+                    - the scores for each passed triple with all possible tails
                     - a partial result to use in regularization
         """
 
         head_embeddings = self.entity_embeddings[
-            samples[:, 0]
+            triples[:, 0]
         ]  # list of entity embeddings for the heads of the facts
         rel_embeddings = self.relation_embeddings[
-            samples[:, 1]
+            triples[:, 1]
         ]  # list of relation embeddings for the relations of the heads
         tail_embeddings = self.entity_embeddings[
-            samples[:, 2]
+            triples[:, 2]
         ]  # list of entity embeddings for the tails of the facts
 
         to_score_embeddings = self.entity_embeddings
@@ -184,40 +181,40 @@ class DistMult(Model):
             torch.sqrt(tail_embeddings**2),
         )
 
-    def predict_samples(self, samples: np.array) -> Tuple[Any, Any, Any]:
+    def predict_triples(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """
-        This method takes as an input a tensor of 'direct' samples,
+        This method takes as an input a tensor of 'direct' triples,
         runs head and tail prediction on each of them
         and returns
-            - the obtained scores for direct and inverse version of each sample,
-            - the obtained head and tail ranks for each sample
-            - the list of predicted entities for each sample
-        :param samples: a torch.Tensor containing all the DIRECT samples to predict.
+            - the obtained scores for direct and inverse version of each triple,
+            - the obtained head and tail ranks for each triple
+            - the list of predicted entities for each triple
+        :param triples: a torch.Tensor containing all the DIRECT triples to predict.
                         They will be automatically inverted to perform head prediction
 
-        :return: three dicts mapping each passed direct sample (in Tuple format) respectively to
-                    - the scores of that direct sample and of the corresponding inverse sample;
-                    - the head and tail rank for that sample;
-                    - the head and tail predictions for that sample
+        :return: three dicts mapping each passed direct triple (in Tuple format) respectively to
+                    - the scores of that direct triple and of the corresponding inverse triple;
+                    - the head and tail rank for that triple;
+                    - the head and tail predictions for that triple
         """
 
         scores, ranks, predictions = [], [], []  # output data structures
-        direct_samples = samples
+        direct_triples = triples
 
-        # assert all samples are direct
-        assert np.all(direct_samples[:, 1] < self.dataset.num_direct_relations)
+        # assert all triples are direct
+        assert np.all(direct_triples[:, 1] < self.dataset.num_relations)
 
-        # invert samples to perform head predictions
-        inverse_samples = self.dataset.invert_samples(direct_samples)
+        # invert triples to perform head predictions
+        inverse_triples = self.dataset.invert_triples(direct_triples)
 
-        # obtain scores, ranks and predictions both for direct and inverse samples
+        # obtain scores, ranks and predictions both for direct and inverse triples
         inverse_scores, head_ranks, head_predictions = self.predict_tails(
-            inverse_samples
+            inverse_triples
         )
-        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_samples)
+        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_triples)
 
-        for i in range(direct_samples.shape[0]):
-            # add to the scores list a couple containing the scores of the direct and of the inverse sample
+        for i in range(direct_triples.shape[0]):
+            # add to the scores list a couple containing the scores of the direct and of the inverse triple
             scores.append((direct_scores[i], inverse_scores[i]))
 
             # add to the ranks list a couple containing the ranks of the head and of the tail
@@ -228,28 +225,28 @@ class DistMult(Model):
 
         return scores, ranks, predictions
 
-    def predict_tails(self, samples: np.array) -> Tuple[Any, Any, Any]:
+    def predict_tails(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """
         Returns filtered scores, ranks and predicted entities for each passed fact.
-        :param samples: a torch.LongTensor of triples (head, relation, tail).
+        :param triples: a torch.LongTensor of triples (head, relation, tail).
                       The triples can also be "inverse triples" with (tail, inverse_relation_id, head)
         :return:
         """
 
-        ranks = torch.ones(len(samples))  # initialize with ONES
+        ranks = torch.ones(len(triples))  # initialize with ONES
 
         with torch.no_grad():
-            # compute scores for each sample for all possible tails
-            all_scores = self.all_scores(samples)
+            # compute scores for each triple for all possible tails
+            all_scores = self.all_scores(triples)
 
             # from the obtained scores, extract the the scores of the actual facts <cur_head, cur_rel, cur_tail>
-            targets = torch.zeros(size=(len(samples), 1)).cuda()
-            for i, (_, _, tail_id) in enumerate(samples):
+            targets = torch.zeros(size=(len(triples), 1)).cuda()
+            for i, (_, _, tail_id) in enumerate(triples):
                 targets[i, 0] = all_scores[i, tail_id].item()
 
             # set to -1e6 the scores obtained using tail entities that must be filtered out (filtered scenario)
             # In this way, those entities will be ignored in rankings
-            for i, (head_id, rel_id, tail_id) in enumerate(samples):
+            for i, (head_id, rel_id, tail_id) in enumerate(triples):
                 # get the list of tails to filter out; include the actual target tail entity too
                 filter_out = self.dataset.to_filter[(head_id, rel_id)]
 
@@ -268,10 +265,10 @@ class DistMult(Model):
             targets = targets.cpu().numpy()
 
             # save the list of all obtained scores
-            scores = [targets[i, 0] for i in range(len(samples))]
+            scores = [targets[i, 0] for i in range(len(triples))]
 
             predictions = []
-            for i, (head_id, rel_id, tail_id) in enumerate(samples):
+            for i, (head_id, rel_id, tail_id) in enumerate(triples):
                 filter_out = self.dataset.to_filter[(head_id, rel_id)]
                 if tail_id not in filter_out:
                     filter_out.append(tail_id)
@@ -368,35 +365,35 @@ class KelpieDistMult(KelpieModel, DistMult):
         )
 
     # Override
-    def predict_samples(self, samples: np.array, original_mode: bool = False):
+    def predict_triples(self, triples: np.array, original_mode: bool = False):
         """
-        This method overrides the Model predict_samples method
+        This method overrides the Model predict_triples method
         by adding the possibility to run predictions in original_mode
         which means,
-        :param samples: the DIRECT samples. Will be inverted to perform head prediction
+        :param triples: the DIRECT triples. Will be inverted to perform head prediction
         :param original_mode:
         :return:
         """
 
-        direct_samples = samples
+        direct_triples = triples
 
-        # assert all samples are direct
-        assert (samples[:, 1] < self.dataset.num_direct_relations).all()
+        # assert all triples are direct
+        assert (triples[:, 1] < self.dataset.num_relations).all()
 
-        # if we are in original_mode, make sure that the kelpie entity is not featured in the samples to predict
-        # otherwise, make sure that the original entity is not featured in the samples to predict
+        # if we are in original_mode, make sure that the kelpie entity is not featured in the triples to predict
+        # otherwise, make sure that the original entity is not featured in the triples to predict
         forbidden_entity_id = (
             self.kelpie_entity_id if original_mode else self.original_entity_id
         )
-        assert np.isin(forbidden_entity_id, direct_samples[:][0, 2]) == False
+        assert np.isin(forbidden_entity_id, direct_triples[:][0, 2]) == False
 
         # use the Model implementation method to obtain scores, ranks and prediction results.
         # these WILL feature the forbidden entity, so we now need to filter them
-        scores, ranks, predictions = DistMult.predict_samples(self, direct_samples)
+        scores, ranks, predictions = DistMult.predict_triples(self, direct_triples)
 
         # remove any reference to the forbidden entity id
         # (that may have been included in the predicted entities)
-        for i in range(len(direct_samples)):
+        for i in range(len(direct_triples)):
             head_predictions, tail_predictions = predictions[i]
             head_rank, tail_rank = ranks[i]
 
@@ -428,18 +425,18 @@ class KelpieDistMult(KelpieModel, DistMult):
         return scores, ranks, predictions
 
     # Override
-    def predict_sample(self, sample: np.array, original_mode: bool = False):
+    def predict_triple(self, triple: np.array, original_mode: bool = False):
         """
         Override the
-        :param sample: the DIRECT sample. Will be inverted to perform head prediction
+        :param triple: the DIRECT triple. Will be inverted to perform head prediction
         :param original_mode:
         :return:
         """
 
-        assert sample[1] < self.dataset.num_direct_relations
+        assert triple[1] < self.dataset.num_relations
 
-        scores, ranks, predictions = self.predict_samples(
-            np.array([sample]), original_mode
+        scores, ranks, predictions = self.predict_triples(
+            np.array([triple]), original_mode
         )
         return scores[0], ranks[0], predictions[0]
 

@@ -5,7 +5,8 @@ import time
 import numpy
 import torch
 
-from .dataset import ALL_DATASET_NAMES, Dataset
+from . import ALL_DATASET_NAMES
+from .data import Dataset
 from .kelpie import Kelpie
 from .data_poisoning import DataPoisoning
 from .criage import Criage
@@ -177,9 +178,9 @@ hyperparameters = {
 prefilter = args.prefilter
 relevance_threshold = args.relevance_threshold
 
-# load the dataset and its training samples
+# load the dataset and its training triples
 print("Loading dataset %s..." % args.dataset)
-dataset = Dataset(name=args.dataset, separator="\t", load=True)
+dataset = Dataset(dataset=args.dataset)
 
 print("Reading facts to explain...")
 with open(args.facts_to_explain_path, "r") as facts_file:
@@ -266,29 +267,29 @@ for i, fact in enumerate(testing_facts):
         + ">"
     )
     head_id, relation_id, tail_id = (
-        dataset.get_id_for_entity_name(head),
-        dataset.get_id_for_relation_name(relation),
-        dataset.get_id_for_entity_name(tail),
+        dataset.entity_to_id[head],
+        dataset.relation_to_id[relation],
+        dataset.entity_to_id[tail],
     )
-    sample_to_explain = (head_id, relation_id, tail_id)
+    triple_to_explain = (head_id, relation_id, tail_id)
 
     if args.mode == "sufficient":
         entities_to_convert_ids = (
             None
             if testing_fact_2_entities_to_convert is None
             else [
-                dataset.entity_name_2_id[x]
+                dataset.entity_to_id[x]
                 for x in testing_fact_2_entities_to_convert[(head, relation, tail)]
             ]
         )
 
         (
-            rule_samples_with_relevance,
+            rule_triples_with_relevance,
             entities_to_convert_ids,
         ) = kelpie.explain_sufficient(
-            sample_to_explain=sample_to_explain,
+            triple_to_explain=triple_to_explain,
             perspective="head",
-            num_promising_samples=args.prefilter_threshold,
+            num_promising_triples=args.prefilter_threshold,
             num_entities_to_convert=args.coverage,
             entities_to_convert=entities_to_convert_ids,
         )
@@ -296,15 +297,15 @@ for i, fact in enumerate(testing_facts):
         if entities_to_convert_ids is None or len(entities_to_convert_ids) == 0:
             continue
         entities_to_convert = [
-            dataset.entity_id_2_name[x] for x in entities_to_convert_ids
+            dataset.id_to_entity[x] for x in entities_to_convert_ids
         ]
 
         rule_facts_with_relevance = []
-        for cur_rule_with_relevance in rule_samples_with_relevance:
-            cur_rule_samples, cur_relevance = cur_rule_with_relevance
+        for cur_rule_with_relevance in rule_triples_with_relevance:
+            cur_rule_triples, cur_relevance = cur_rule_with_relevance
 
             cur_rule_facts = [
-                dataset.sample_to_fact(sample) for sample in cur_rule_samples
+                dataset.labels_triple(triple) for triple in cur_rule_triples
             ]
             cur_rule_facts = ";".join([";".join(x) for x in cur_rule_facts])
             rule_facts_with_relevance.append(cur_rule_facts + "::" + str(cur_relevance))
@@ -319,17 +320,17 @@ for i, fact in enumerate(testing_facts):
         output_lines.append("\n")
 
     elif args.mode == "necessary":
-        rule_samples_with_relevance = kelpie.explain_necessary(
-            sample_to_explain=sample_to_explain,
+        rule_triples_with_relevance = kelpie.explain_necessary(
+            triple_to_explain=triple_to_explain,
             perspective="head",
-            num_promising_samples=args.prefilter_threshold,
+            num_promising_triples=args.prefilter_threshold,
         )
         rule_facts_with_relevance = []
-        for cur_rule_with_relevance in rule_samples_with_relevance:
-            cur_rule_samples, cur_relevance = cur_rule_with_relevance
+        for cur_rule_with_relevance in rule_triples_with_relevance:
+            cur_rule_triples, cur_relevance = cur_rule_with_relevance
 
             cur_rule_facts = [
-                dataset.sample_to_fact(sample) for sample in cur_rule_samples
+                dataset.labels_triple(triple) for triple in cur_rule_triples
             ]
             cur_rule_facts = ";".join([";".join(x) for x in cur_rule_facts])
             rule_facts_with_relevance.append(cur_rule_facts + "::" + str(cur_relevance))

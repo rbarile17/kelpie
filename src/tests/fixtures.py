@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.dataset import Dataset
+from src.data import Dataset
 
 from src.link_prediction.models import ComplEx
 from src.link_prediction.models import (
@@ -20,7 +20,7 @@ from src.link_prediction.models import (
 
 @pytest.fixture
 def dataset():
-    return Dataset(name="FB15k-237", separator="\t", load=True)
+    return Dataset(dataset="FB15k-237")
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def model(dataset, hyperparameters):
 
 
 @pytest.fixture
-def sample_to_explain(dataset):
-    return dataset.fact_to_sample(
+def triple_to_explain(dataset):
+    return dataset.ids_triple(
         ("/m/07z2lx", "/award/award_category/category_of", "/m/0gcf2r")
     )

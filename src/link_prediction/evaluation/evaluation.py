@@ -12,39 +12,39 @@ class Evaluator:
             model.dataset
         )  # the Dataset may be useful to convert ids to names
 
-    def evaluate(self, samples: np.array, write_output: bool = False):
+    def evaluate(self, triples: np.array, write_output: bool = False):
         self.model.cuda()
 
-        # if the model is Transe, it uses too much memory to allow computation of all samples altogether
+        # if the model is Transe, it uses too much memory to allow computation of all triples altogether
         batch_size = 500
-        if len(samples) > batch_size and isinstance(self.model, TransE):
+        if len(triples) > batch_size and isinstance(self.model, TransE):
             scores, ranks, predictions = [], [], []
             batch_start = 0
-            while batch_start < len(samples):
-                cur_batch = samples[
-                    batch_start : min(len(samples), batch_start + batch_size)
+            while batch_start < len(triples):
+                cur_batch = triples[
+                    batch_start : min(len(triples), batch_start + batch_size)
                 ]
                 (
                     cur_batch_scores,
                     cur_batch_ranks,
                     cur_batch_predictions,
-                ) = self.model.predict_samples(cur_batch)
+                ) = self.model.predict_triples(cur_batch)
                 scores += cur_batch_scores
                 ranks += cur_batch_ranks
                 predictions += cur_batch_predictions
 
                 batch_start += batch_size
         else:
-            # run prediction on all the samples
-            scores, ranks, predictions = self.model.predict_samples(samples)
+            # run prediction on all the triples
+            scores, ranks, predictions = self.model.predict_triples(triples)
 
         all_ranks = []
-        for i in range(samples.shape[0]):
+        for i in range(triples.shape[0]):
             all_ranks.append(ranks[i][0])
             all_ranks.append(ranks[i][1])
 
         if write_output:
-            self._write_output(samples, ranks, predictions)
+            self._write_output(triples, ranks, predictions)
 
         return (
             self.mrr(all_ranks),
@@ -53,11 +53,11 @@ class Evaluator:
             self.mr(all_ranks),
         )
 
-    def _write_output(self, samples, ranks, predictions):
+    def _write_output(self, triples, ranks, predictions):
         result_lines = []
         detail_lines = []
-        for i in range(samples.shape[0]):
-            head_id, rel_id, tail_id = samples[i]
+        for i in range(triples.shape[0]):
+            head_id, rel_id, tail_id = triples[i]
 
             head_rank, tail_rank = ranks[i]
             head_prediction_ids, tail_prediction_ids = predictions[i]
@@ -65,9 +65,9 @@ class Evaluator:
             head_prediction_ids = head_prediction_ids[:head_rank]
             tail_prediction_ids = tail_prediction_ids[:tail_rank]
 
-            head_name = self.dataset.get_name_for_entity_id(head_id)
-            rel_name = self.dataset.get_name_for_relation_id(rel_id)
-            tail_name = self.dataset.get_name_for_entity_id(tail_id)
+            head_name = self.dataset.id_to_entity[head_id]
+            rel_name = self.dataset.id_to_relation[rel_id]
+            tail_name = self.dataset.id_to_entity[tail_id]
 
             textual_fact_key = ";".join([head_name, rel_name, tail_name])
 
@@ -76,10 +76,10 @@ class Evaluator:
             )
 
             head_prediction_names = [
-                self.dataset.get_name_for_entity_id(x) for x in head_prediction_ids
+                self.dataset.id_to_entity[x] for x in head_prediction_ids
             ]
             tail_prediction_names = [
-                self.dataset.get_name_for_entity_id(x) for x in tail_prediction_ids
+                self.dataset.id_to_entity[x] for x in tail_prediction_ids
             ]
 
             detail_lines.append(
@@ -133,23 +133,23 @@ class KelpieEvaluator(Evaluator):
 
     # override
     def evaluate(
-        self, samples: np.array, write_output: bool = False, original_mode: bool = False
+        self, triples: np.array, write_output: bool = False, original_mode: bool = False
     ):
         batch_size = 1000
 
-        # if the model is Transe, it uses too much memory to allow computation of all samples altogether
-        if len(samples) > batch_size and isinstance(self.model, TransE):
+        # if the model is Transe, it uses too much memory to allow computation of all triples altogether
+        if len(triples) > batch_size and isinstance(self.model, TransE):
             scores, ranks, predictions = [], [], []
             batch_start = 0
-            while batch_start < len(samples):
-                cur_batch = samples[
-                    batch_start : min(len(samples), batch_start + batch_size)
+            while batch_start < len(triples):
+                cur_batch = triples[
+                    batch_start : min(len(triples), batch_start + batch_size)
                 ]
                 (
                     cur_batch_scores,
                     cur_batch_ranks,
                     cur_batch_predictions,
-                ) = self.model.predict_samples(cur_batch, original_mode)
+                ) = self.model.predict_triples(cur_batch, original_mode)
                 scores += cur_batch_scores
                 ranks += cur_batch_ranks
                 predictions += cur_batch_predictions
@@ -157,18 +157,18 @@ class KelpieEvaluator(Evaluator):
                 batch_start += batch_size
 
         else:
-            # run prediction on all the samples
-            scores, ranks, predictions = self.model.predict_samples(
-                samples, original_mode
+            # run prediction on all the triples
+            scores, ranks, predictions = self.model.predict_triples(
+                triples, original_mode
             )
 
         all_ranks = []
-        for i in range(samples.shape[0]):
+        for i in range(triples.shape[0]):
             all_ranks.append(ranks[i][0])
             all_ranks.append(ranks[i][1])
 
         if write_output:
-            self._write_output(samples, ranks, predictions)
+            self._write_output(triples, ranks, predictions)
 
         return (
             self.mrr(all_ranks),

@@ -34,7 +34,7 @@ def get_classes(entity):
     return set([row["class"]["value"].split("/")[-1] for row in rows])
 
 
-entities = pd.DataFrame(dataset.entities, columns=["entity"])
+entities = pd.DataFrame(list(dataset.entity_to_id.keys()), columns=["entity"])
 entities["classes"] = entities["entity"].progress_map(get_classes)
 
 entities.to_csv("entities.csv", index=False, header=False)

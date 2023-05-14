@@ -1,7 +1,7 @@
 from typing import Tuple, Any
 
 from .prefilter import PreFilter
-from ..dataset import Dataset
+from ..data import Dataset
 from ..link_prediction.models import Model
 
 
@@ -19,49 +19,38 @@ class NoPreFilter(PreFilter):
         """
         super().__init__(model, dataset)
 
-        self.entity_id_2_train_samples = {}
+        self.entity_id_2_training_triples = self.dataset.entity_to_training_triples
 
-        for h, r, t in dataset.train_samples:
-            if h in self.entity_id_2_train_samples:
-                self.entity_id_2_train_samples[h].append((h, r, t))
-            else:
-                self.entity_id_2_train_samples[h] = [(h, r, t)]
-
-            if t in self.entity_id_2_train_samples:
-                self.entity_id_2_train_samples[t].append((h, r, t))
-            else:
-                self.entity_id_2_train_samples[t] = [(h, r, t)]
-
-    def most_promising_samples_for(
+    def most_promising_triples_for(
         self,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
         top_k=-1,  # not used
         verbose=True,
     ):
         """
-        This method extracts the top k promising samples for interpreting the sample to explain,
+        This method extracts the top k promising triples for interpreting the triple to explain,
         from the perspective of either its head or its tail (that is, either featuring its head or its tail).
 
-        :param sample_to_explain: the sample to explain
+        :param triple_to_explain: the triple to explain
         :param perspective: a string conveying the explanation perspective. It can be either "head" or "tail":
-                                - if "head", find the most promising samples featuring the head of the sample to explain
-                                - if "tail", find the most promising samples featuring the tail of the sample to explain
-        :param top_k: the number of top promising samples to extract.
-        :return: the sorted list of the k most promising samples.
+                                - if "head", find the most promising triples featuring the head of the triple to explain
+                                - if "tail", find the most promising triples featuring the tail of the triple to explain
+        :param top_k: the number of top promising triples to extract.
+        :return: the sorted list of the k most promising triples.
         """
 
-        head, relation, tail = sample_to_explain
+        head, relation, tail = triple_to_explain
 
         if verbose:
             print(
                 "Extracting promising facts for"
-                + self.dataset.printable_sample(sample_to_explain)
+                + self.dataset.printable_triple(triple_to_explain)
             )
 
         start_entity, end_entity = (
             (head, tail) if perspective == "head" else (tail, head)
         )
-        samples_featuring_start_entity = self.entity_id_2_train_samples[start_entity]
+        triples_featuring_start_entity = self.entity_id_2_training_triples[start_entity]
 
-        return samples_featuring_start_entity
+        return triples_featuring_start_entity

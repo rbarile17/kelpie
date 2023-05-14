@@ -18,8 +18,7 @@ from .model import (
     HIDDEN_DROPOUT_1,
     HIDDEN_DROPOUT_2,
 )
-from ...dataset import Dataset
-from ...kelpie_dataset import KelpieDataset
+from ...data import Dataset, KelpieDataset
 
 
 class TuckER(Model):
@@ -29,9 +28,9 @@ class TuckER(Model):
     and is largely inspired by the official implementation provided by the authors
     Ivana Balažević, Carl Allen, and Timothy M. Hospedales at https://github.com/ibalazevic/TuckER.
 
-    In training or evaluation, our TuckER class requires samples to be passed as 2-dimensional np.arrays.
-    Each row corresponds to a sample and contains the integer ids of its head, relation and tail.
-    Only *direct* samples should be passed to the model.
+    In training or evaluation, our TuckER class requires triples to be passed as 2-dimensional np.arrays.
+    Each row corresponds to a triple and contains the integer ids of its head, relation and tail.
+    Only *direct* triples should be passed to the model.
     """
 
     def __init__(self, dataset: Dataset, hyperparameters: dict, init_random=True):
@@ -56,7 +55,7 @@ class TuckER(Model):
         self.name = "TuckER"
         self.dataset = dataset
         self.num_entities = dataset.num_entities  # number of entities in dataset
-        self.num_relations = dataset.num_relations  # number of relations in dataset
+        self.num_relations = 2 * dataset.num_relations  # number of relations in dataset
         self.entity_dimension = hyperparameters[
             ENTITY_DIMENSION
         ]  # entity embedding dimension
@@ -113,21 +112,21 @@ class TuckER(Model):
         """
         return False
 
-    def score(self, samples: np.array) -> np.array:
+    def score(self, triples: np.array) -> np.array:
         """
-        Compute scores for the passed samples
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a monodimensional numpy array containing the score for each passed sample
+        Compute scores for the passed triples
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a monodimensional numpy array containing the score for each passed triple
         """
         # compute scores for each possible tail
-        all_scores = self.all_scores(samples)
+        all_scores = self.all_scores(triples)
 
-        # extract from all_scores the specific scores for the initial samples
-        samples_scores = []
-        for i, (head_index, relation_index, tail_index) in enumerate(samples):
-            samples_scores.append(all_scores[i][tail_index])
+        # extract from all_scores the specific scores for the initial triples
+        triples_scores = []
+        for i, (head_index, relation_index, tail_index) in enumerate(triples):
+            triples_scores.append(all_scores[i][tail_index])
 
-        return np.array(samples_scores)
+        return np.array(triples_scores)
 
     def score_embeddings(
         self,
@@ -144,7 +143,7 @@ class TuckER(Model):
         :return: a numpy array containing the scores computed for the passed triples of embeddings
         """
 
-        # NOTE: this method is extremely important, because apart from being called by the ComplEx score(samples) method
+        # NOTE: this method is extremely important, because apart from being called by the ComplEx score(triples) method
         # it is also used to perform several operations on gradients in our GradientEngine
         # as well as the operations from the paper "Data Poisoning Attack against Knowledge Graph Embedding"
         # that we use as a baseline and as a heuristic for our work.
@@ -188,29 +187,29 @@ class TuckER(Model):
         output_scores = torch.diagonal(scores)
         return output_scores
 
-    def forward(self, samples: np.array):
+    def forward(self, triples: np.array):
         """
-        Perform forward propagation on the passed samples.
+        Perform forward propagation on the passed triples.
 
         In the specific case of TuckER, this method just returns the scores
-        that each sample obtains with each possible tail.
+        that each triple obtains with each possible tail.
         This is because TuckER does not require any external Regularizer,
         so only the scores (for all possible tails) are required in training.
         So, in this specific case, the forward method corresponds to the all_scores method.
 
-        :param samples: a 2-dimensional numpy array containing the samples to run forward propagation on, one per row
-        :return: a 2-dimensional numpy array that, for each sample, contains a row with the for each passed sample
+        :param triples: a 2-dimensional numpy array containing the triples to run forward propagation on, one per row
+        :return: a 2-dimensional numpy array that, for each triple, contains a row with the for each passed triple
         """
-        return self.all_scores(samples)
+        return self.all_scores(triples)
 
-    def all_scores(self, samples: np.array):
+    def all_scores(self, triples: np.array):
         """
-        For each of the passed samples, compute scores for all possible entities.
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a 2-dimensional numpy array that, for each sample, contains a row with the score for each possible target tail
+        For each of the passed triples, compute scores for all possible entities.
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a 2-dimensional numpy array that, for each triple, contains a row with the score for each possible target tail
         """
 
-        head_indexes, relation_indexes = samples[:, 0], samples[:, 1]
+        head_indexes, relation_indexes = triples[:, 0], triples[:, 1]
         head_embeddings = self.entity_embeddings[head_indexes]
         relation_embeddings = self.relation_embeddings[relation_indexes]
         tail_embeddings = self.entity_embeddings  # all possible tails
@@ -255,48 +254,48 @@ class TuckER(Model):
 
         return scores
 
-    def predict_samples(self, samples: np.array) -> Tuple[Any, Any, Any]:
+    def predict_triples(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """
-        This method performs prediction on a collection of samples, and returns the corresponding
+        This method performs prediction on a collection of triples, and returns the corresponding
         scores, ranks and prediction lists.
 
-        All the passed samples must be DIRECT samples in the original dataset.
-        (if the Model supports inverse samples as well,
-        it should invert the passed samples while running this method)
+        All the passed triples must be DIRECT triples in the original dataset.
+        (if the Model supports inverse triples as well,
+        it should invert the passed triples while running this method)
 
-        :param samples: the direct samples to predict, in numpy array format
+        :param triples: the direct triples to predict, in numpy array format
         :return: this method returns three lists:
-                    - the list of scores for the passed samples,
+                    - the list of scores for the passed triples,
                                 OR IF THE MODEL SUPPORTS INVERSE FACTS
-                        the list of couples <direct sample score, inverse sample score>,
-                        where the i-th score refers to the i-th sample in the input samples.
+                        the list of couples <direct triple score, inverse triple score>,
+                        where the i-th score refers to the i-th triple in the input triples.
 
                     - the list of couples (head rank, tail rank)
-                        where the i-th couple refers to the i-th sample in the input samples.
+                        where the i-th couple refers to the i-th triple in the input triples.
 
                     - the list of couples (head_predictions, tail_predictions)
-                        where the i-th couple refers to the i-th sample in the input samples.
-                        The head_predictions and tail_predictions for each sample
-                        are numpy arrays containing all the predicted heads and tails respectively for that sample.
+                        where the i-th couple refers to the i-th triple in the input triples.
+                        The head_predictions and tail_predictions for each triple
+                        are numpy arrays containing all the predicted heads and tails respectively for that triple.
         """
 
         scores, ranks, predictions = [], [], []  # output data structures
-        direct_samples = samples
+        direct_triples = triples
 
-        # assert all samples are direct
-        assert (samples[:, 1] < self.dataset.num_direct_relations).all()
+        # assert all triples are direct
+        assert (triples[:, 1] < self.dataset.num_relations).all()
 
-        # invert samples to perform head predictions
-        inverse_samples = self.dataset.invert_samples(direct_samples)
+        # invert triples to perform head predictions
+        inverse_triples = self.dataset.invert_triples(direct_triples)
 
-        # obtain scores, ranks and predictions both for direct and inverse samples
+        # obtain scores, ranks and predictions both for direct and inverse triples
         inverse_scores, head_ranks, head_predictions = self.predict_tails(
-            inverse_samples
+            inverse_triples
         )
-        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_samples)
+        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_triples)
 
-        for i in range(direct_samples.shape[0]):
-            # add to the scores list a couple containing the scores of the direct and of the inverse sample
+        for i in range(direct_triples.shape[0]):
+            # add to the scores list a couple containing the scores of the direct and of the inverse triple
             scores += [(direct_scores[i], inverse_scores[i])]
 
             # add to the ranks list a couple containing the ranks of the head and of the tail
@@ -307,48 +306,48 @@ class TuckER(Model):
 
         return scores, ranks, predictions
 
-    def predict_tails(self, samples):
+    def predict_tails(self, triples):
         """
-        This method receives in input a batch of samples
+        This method receives in input a batch of triples
         and returns the corresponding tail scores, tail ranks and tail predictions
-        :param samples: the direct samples to predict, in numpy array format
+        :param triples: the direct triples to predict, in numpy array format
         :return: this method returns three lists:
-                        - the list of tails scores for the passed samples,
-                            where the i-th score refers to the i-th sample in the input samples.
+                        - the list of tails scores for the passed triples,
+                            where the i-th score refers to the i-th triple in the input triples.
 
                         - the list of tail ranks
-                            where the i-th rank refers to the i-th sample in the input samples.
+                            where the i-th rank refers to the i-th triple in the input triples.
 
                         - the list of tail predictions
-                            where the i-th prediction refers to the i-th sample in the input samples.
-                            The tail_predictions for each sample
-                            are numpy arrays containing all the predicted tails respectively for that sample.
+                            where the i-th prediction refers to the i-th triple in the input triples.
+                            The tail_predictions for each triple
+                            are numpy arrays containing all the predicted tails respectively for that triple.
         """
 
         scores, ranks, pred_out = [], [], []
 
         batch_size = 128
-        for i in range(0, samples.shape[0], batch_size):
-            batch = samples[i : min(i + batch_size, len(samples))]
+        for i in range(0, triples.shape[0], batch_size):
+            batch = triples[i : min(i + batch_size, len(triples))]
 
             all_scores = self.all_scores(batch)
 
             tail_indexes = torch.tensor(
                 batch[:, 2]
-            ).cuda()  # tails of all passed samples
+            ).cuda()  # tails of all passed triples
 
-            # for each sample to predict
-            for sample_number, (head_id, relation_id, tail_id) in enumerate(batch):
+            # for each triple to predict
+            for triple_number, (head_id, relation_id, tail_id) in enumerate(batch):
                 tails_to_filter = self.dataset.to_filter[(head_id, relation_id)]
 
-                # score obtained by the correct tail of the sample
-                target_tail_score = all_scores[sample_number, tail_id].item()
+                # score obtained by the correct tail of the triple
+                target_tail_score = all_scores[triple_number, tail_id].item()
                 scores.append(target_tail_score)
 
                 # set to 0.0 all the predicted values for all the correct tails for that Head-Rel couple
-                all_scores[sample_number, tails_to_filter] = 0.0
+                all_scores[triple_number, tails_to_filter] = 0.0
                 # re-set the predicted value for that tail to the original value
-                all_scores[sample_number, tail_id] = target_tail_score
+                all_scores[triple_number, tail_id] = target_tail_score
 
             # this amounts to using ORDINAL policy
             sorted_values, sorted_indexes = torch.sort(
@@ -437,35 +436,35 @@ class KelpieTuckER(KelpieModel, TuckER):
         self.batch_norm_2.eval()
 
     # Override
-    def predict_samples(self, samples: np.array, original_mode: bool = False):
+    def predict_triples(self, triples: np.array, original_mode: bool = False):
         """
-        This method overrides the Model predict_samples method
+        This method overrides the Model predict_triples method
         by adding the possibility to run predictions in original_mode
         which means ...
-        :param samples: the DIRECT samples. Will be inverted to perform head prediction
+        :param triples: the DIRECT triples. Will be inverted to perform head prediction
         :param original_mode:
         :return:
         """
 
-        direct_samples = samples
+        direct_triples = triples
 
-        # assert all samples are direct
-        assert (samples[:, 1] < self.dataset.num_direct_relations).all()
+        # assert all triples are direct
+        assert (triples[:, 1] < self.dataset.num_relations).all()
 
-        # if we are in original_mode, make sure that the kelpie entity is not featured in the samples to predict
-        # otherwise, make sure that the original entity is not featured in the samples to predict
+        # if we are in original_mode, make sure that the kelpie entity is not featured in the triples to predict
+        # otherwise, make sure that the original entity is not featured in the triples to predict
         forbidden_entity_id = (
             self.kelpie_entity_id if original_mode else self.original_entity_id
         )
-        assert np.isin(forbidden_entity_id, direct_samples[:][0, 2]) == False
+        assert np.isin(forbidden_entity_id, direct_triples[:][0, 2]) == False
 
         # use the TuckER implementation method to obtain scores, ranks and prediction results.
         # these WILL feature the forbidden entity, so we now need to filter them
-        scores, ranks, predictions = TuckER.predict_samples(self, direct_samples)
+        scores, ranks, predictions = TuckER.predict_triples(self, direct_triples)
 
         # remove any reference to the forbidden entity id
         # (that may have been included in the predicted entities)
-        for i in range(len(direct_samples)):
+        for i in range(len(direct_triples)):
             head_predictions, tail_predictions = predictions[i]
             head_rank, tail_rank = ranks[i]
 
@@ -497,17 +496,17 @@ class KelpieTuckER(KelpieModel, TuckER):
         return scores, ranks, predictions
 
     # Override
-    def predict_sample(self, sample: np.array, original_mode: bool = False):
+    def predict_triple(self, triple: np.array, original_mode: bool = False):
         """
         Override the
-        :param sample: the DIRECT sample. Will be inverted to perform head prediction
+        :param triple: the DIRECT triple. Will be inverted to perform head prediction
         :param original_mode:
         :return:
         """
 
-        assert sample[1] < self.dataset.num_direct_relations
+        assert triple[1] < self.dataset.num_relations
 
-        scores, ranks, predictions = self.predict_samples(
-            np.array([sample]), original_mode
+        scores, ranks, predictions = self.predict_triples(
+            np.array([triple]), original_mode
         )
         return scores[0], ranks[0], predictions[0]

@@ -4,7 +4,7 @@ import random
 from typing import Tuple, Any
 
 from .explanation_builder import NecessaryExplanationBuilder
-from ..dataset import Dataset
+from ..data import Dataset
 from ..relevance_engines import PostTrainingEngine
 from ..link_prediction.models import Model
 
@@ -21,7 +21,7 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         model: Model,
         dataset: Dataset,
         hyperparameters: dict,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
         relevance_threshold: float = None,
         max_explanation_length: int = -1,
@@ -32,7 +32,7 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         :param model: the model to explain
         :param dataset: the dataset used to train the model
         :param hyperparameters: the hyperparameters of the model and of its optimization process
-        :param sample_to_explain: the predicted sample to explain
+        :param triple_to_explain: the predicted triple to explain
         :param perspective: the explanation perspective, either "head" or "tail"
         :param max_explanation_length: the maximum number of facts to include in the explanation to extract
         """
@@ -40,7 +40,7 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         super().__init__(
             model=model,
             dataset=dataset,
-            sample_to_explain=sample_to_explain,
+            triple_to_explain=triple_to_explain,
             perspective=perspective,
             max_explanation_length=max_explanation_length,
         )
@@ -55,20 +55,20 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
             model=model, dataset=dataset, hyperparameters=hyperparameters
         )
 
-    def build_explanations(self, samples_to_remove: list, top_k: int = 10):
+    def build_explanations(self, triples_to_remove: list, top_k: int = 10):
         all_rules_with_relevance = []
 
-        # get relevance for rules with length 1 (that is, samples)
-        sample_2_relevance = self.extract_rules_with_length_1(
-            samples_to_remove=samples_to_remove
+        # get relevance for rules with length 1 (that is, triples)
+        triple_2_relevance = self.extract_rules_with_length_1(
+            triples_to_remove=triples_to_remove
         )
 
-        samples_with_relevance = sorted(
-            sample_2_relevance.items(), key=lambda x: x[1], reverse=True
+        triples_with_relevance = sorted(
+            triple_2_relevance.items(), key=lambda x: x[1], reverse=True
         )
-        all_rules_with_relevance += [([x], y) for (x, y) in samples_with_relevance]
+        all_rules_with_relevance += [([x], y) for (x, y) in triples_with_relevance]
 
-        samples_number = len(samples_with_relevance)
+        triples_number = len(triples_with_relevance)
 
         best_rule, best_rule_relevance = all_rules_with_relevance[0]
         if best_rule_relevance > self.xsi:
@@ -76,13 +76,13 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
 
         cur_rule_length = 2
 
-        # stop if you have too few samples (e.g. if you have only 2 samples, you can not extract rules of length 3)
+        # stop if you have too few triples (e.g. if you have only 2 triples, you can not extract rules of length 3)
         # or if you get to the length cap
-        while cur_rule_length <= samples_number and cur_rule_length <= self.length_cap:
+        while cur_rule_length <= triples_number and cur_rule_length <= self.length_cap:
             rule_2_relevance = self.extract_rules_with_length(
-                samples_to_remove=samples_to_remove,
+                triples_to_remove=triples_to_remove,
                 length=cur_rule_length,
-                sample_2_relevance=sample_2_relevance,
+                triple_2_relevance=triple_2_relevance,
             )
             current_rules_with_relevance = sorted(
                 rule_2_relevance.items(), key=lambda x: x[1], reverse=True
@@ -111,30 +111,30 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
             :top_k
         ]
 
-    def extract_rules_with_length_1(self, samples_to_remove: list):
-        sample_2_relevance = {}
+    def extract_rules_with_length_1(self, triples_to_remove: list):
+        triple_2_relevance = {}
 
-        # this is an exception: all samples (= rules with length 1) are tested
-        for i, sample_to_remove in enumerate(samples_to_remove):
+        # this is an exception: all triples (= rules with length 1) are tested
+        for i, triple_to_remove in enumerate(triples_to_remove):
             print(
-                "\n\tComputing relevance for sample "
+                "\n\tComputing relevance for triple "
                 + str(i)
                 + " on "
-                + str(len(samples_to_remove))
+                + str(len(triples_to_remove))
                 + ": "
-                + self.dataset.printable_sample(sample_to_remove)
+                + self.dataset.printable_triple(triple_to_remove)
             )
-            relevance = self._compute_relevance_for_rule(([sample_to_remove]))
-            sample_2_relevance[sample_to_remove] = relevance
+            relevance = self._compute_relevance_for_rule(([triple_to_remove]))
+            triple_2_relevance[triple_to_remove] = relevance
             print("\tObtained relevance: " + str(relevance))
-        return sample_2_relevance
+        return triple_2_relevance
 
     def extract_rules_with_length(
-        self, samples_to_remove: list, length: int, sample_2_relevance: dict
+        self, triples_to_remove: list, length: int, triple_2_relevance: dict
     ):
-        all_possible_rules = itertools.combinations(samples_to_remove, length)
+        all_possible_rules = itertools.combinations(triples_to_remove, length)
         all_possible_rules_with_preliminary_scores = [
-            (x, self._preliminary_rule_score(x, sample_2_relevance))
+            (x, self._preliminary_rule_score(x, triple_2_relevance))
             for x in all_possible_rules
         ]
         all_possible_rules_with_preliminary_scores = sorted(
@@ -222,15 +222,15 @@ class StochasticNecessaryExplanationBuilder(NecessaryExplanationBuilder):
             pt_target_entity_rank,
             execution_time,
         ) = self.engine.removal_relevance(
-            sample_to_explain=self.sample_to_explain,
+            triple_to_explain=self.triple_to_explain,
             perspective=self.perspective,
-            samples_to_remove=nple_to_remove,
+            triples_to_remove=nple_to_remove,
         )
 
         return relevance
 
-    def _preliminary_rule_score(self, rule, sample_2_relevance):
-        return numpy.sum([sample_2_relevance[x] for x in rule])
+    def _preliminary_rule_score(self, rule, triple_2_relevance):
+        return numpy.sum([triple_2_relevance[x] for x in rule])
 
     def _average(self, l: list):
         result = 0.0

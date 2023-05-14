@@ -15,41 +15,41 @@ def post_training_engine(dataset, model, hyperparameters):
 
 def test_removal_relevance(
     post_training_engine,
-    sample_to_explain,
-    highest_relevance_sample,
-    lowest_relevance_sample,
+    triple_to_explain,
+    highest_relevance_triple,
+    lowest_relevance_triple,
 ):
-    hr_fake_samples_relevance = post_training_engine.removal_relevance(
-        sample_to_explain=sample_to_explain,
-        samples_to_remove=np.array([highest_relevance_sample]),
+    hr_fake_triples_relevance = post_training_engine.removal_relevance(
+        triple_to_explain=triple_to_explain,
+        triples_to_remove=np.array([highest_relevance_triple]),
         perspective="head",
     )[0]
 
-    lr_fake_sample_relevance = post_training_engine.removal_relevance(
-        sample_to_explain=sample_to_explain,
-        samples_to_remove=np.array([lowest_relevance_sample]),
+    lr_fake_triple_relevance = post_training_engine.removal_relevance(
+        triple_to_explain=triple_to_explain,
+        triples_to_remove=np.array([lowest_relevance_triple]),
         perspective="head",
     )[0]
 
-    assert hr_fake_samples_relevance > lr_fake_sample_relevance
+    assert hr_fake_triples_relevance > lr_fake_triple_relevance
 
 
 def test_addition_relevance(
     post_training_engine,
-    sample_to_explain,
-    highest_relevance_sample,
-    lowest_relevance_sample,
+    triple_to_explain,
+    highest_relevance_triple,
+    lowest_relevance_triple,
 ):
-    hr_fake_samples_relevance = post_training_engine.addition_relevance(
-        sample_to_convert=sample_to_explain,
-        samples_to_add=np.array([highest_relevance_sample]),
+    hr_fake_triples_relevance = post_training_engine.addition_relevance(
+        triple_to_convert=triple_to_explain,
+        triples_to_add=np.array([highest_relevance_triple]),
         perspective="head",
     )[0]
 
-    lr_fake_sample_relevance = post_training_engine.addition_relevance(
-        sample_to_convert=sample_to_explain,
-        samples_to_add=np.array([lowest_relevance_sample]),
+    lr_fake_triple_relevance = post_training_engine.addition_relevance(
+        triple_to_convert=triple_to_explain,
+        triples_to_add=np.array([lowest_relevance_triple]),
         perspective="head",
     )[0]
 
-    assert hr_fake_samples_relevance > lr_fake_sample_relevance
+    assert hr_fake_triples_relevance > lr_fake_triple_relevance

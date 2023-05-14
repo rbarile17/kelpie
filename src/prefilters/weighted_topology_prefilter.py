@@ -2,13 +2,12 @@ import networkx as nx
 import pandas as pd
 
 from ast import literal_eval
-from collections import defaultdict
 from typing import Tuple, Any
 
 from .. import DBPEDIA50_REASONED_PATH
 
 from .prefilter import PreFilter
-from ..dataset import Dataset
+from ..data import Dataset
 from ..link_prediction.models import Model
 from ..utils import jaccard_similarity
 
@@ -16,7 +15,7 @@ from ..utils import jaccard_similarity
 class WeightedTopologyPreFilter(PreFilter):
     """
     The TopologyPreFilter object is a PreFilter that relies on the graph topology
-    to extract the most promising samples for an explanation.
+    to extract the most promising triples for an explanation.
     """
 
     def __init__(self, model: Model, dataset: Dataset):
@@ -29,11 +28,11 @@ class WeightedTopologyPreFilter(PreFilter):
         super().__init__(model, dataset)
 
         self.graph = nx.MultiGraph()
-        self.graph.add_nodes_from(list(dataset.entity_id_2_name.keys()))
+        self.graph.add_nodes_from(list(dataset.id_to_entity.keys()))
         self.graph.add_edges_from(
             [
-                (h, t, {"relation_label": dataset.get_name_for_relation_id(r)})
-                for h, r, t in dataset.train_samples
+                (h, t, {"relation_label": dataset.id_to_relation[r]})
+                for h, r, t in dataset.training_triples
             ]
         )
 
@@ -46,70 +45,69 @@ class WeightedTopologyPreFilter(PreFilter):
             ["classes"]
         ].to_dict(orient="index")
 
-        self.entity_id_2_train_samples = defaultdict(list)
+        self.entity_to_training_triples = self.dataset.entity_to_training_triples
 
-        for head, relation, tail in dataset.train_samples:
-            self.entity_id_2_train_samples[head].append((head, relation, tail))
-            self.entity_id_2_train_samples[tail].append((head, relation, tail))
-
-    def most_promising_samples_for(
+    def most_promising_triples_for(
         self,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
         top_k=50,
         verbose=True,
     ):
         """See base class."""
-        head, relation, tail = sample_to_explain
+        head, relation, tail = triple_to_explain
         self.relation_to_explain = relation
 
         if verbose:
             print(
-                f"Extracting promising facts for {self.dataset.printable_sample(sample_to_explain)}"
+                f"Extracting promising facts for {self.dataset.printable_triple(triple_to_explain)}"
             )
 
         start_entity, end_entity = (
             (head, tail) if perspective == "head" else (tail, head)
         )
 
-        sample_to_analyze_2_min_path_length = {
-            sample_to_analyze: self.analyze_sample(
-                (start_entity, end_entity, sample_to_analyze)
+        triple_to_analyze_2_min_path_length = {
+            triple_to_analyze: self.analyze_triple(
+                (start_entity, end_entity, triple_to_analyze)
             )
-            for sample_to_analyze in self.entity_id_2_train_samples[start_entity]
+            for triple_to_analyze in sorted(
+                self.entity_to_training_triples[start_entity],
+                key=lambda x: (x[0], x[1], x[2]),
+            )
         }
 
         results = sorted(
-            sample_to_analyze_2_min_path_length.items(), key=lambda x: x[1]
+            triple_to_analyze_2_min_path_length.items(), key=lambda x: x[1]
         )
         results = [x[0] for x in results]
 
         return results[:top_k]
 
     def semantic_score_entities(self, entity1, entity2, edge_data):
-        entity1 = self.dataset.get_name_for_entity_id(entity1)
-        entity2 = self.dataset.get_name_for_entity_id(entity2)
+        entity1 = self.dataset.id_to_entity[entity1]
+        entity2 = self.dataset.id_to_entity[entity2]
 
         return 1 - jaccard_similarity(
             self.entities_semantic[entity1]["classes"],
             self.entities_semantic[entity2]["classes"],
         )
 
-    def analyze_sample(self, input):
+    def analyze_triple(self, input):
         (
             start_entity,
             end_entity,
-            sample_to_analyze,
+            triple_to_analyze,
         ) = input
 
-        head_to_analyze, _, tail_to_analyze = sample_to_analyze
+        head_to_analyze, _, tail_to_analyze = triple_to_analyze
 
         if head_to_analyze == start_entity:
             entity_to_analyze = tail_to_analyze
         elif tail_to_analyze == start_entity:
             entity_to_analyze = head_to_analyze
         else:
-            raise ValueError("Start entity not found in sample to analyze")
+            raise ValueError("Start entity not found in triple to analyze")
 
         try:
             return nx.shortest_path_length(

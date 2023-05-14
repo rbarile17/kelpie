@@ -1,5 +1,5 @@
 from typing import Tuple, Any
-from ..dataset import Dataset
+from ..data import Dataset
 from ..link_prediction.models import Model
 
 TOPOLOGY_PREFILTER = "topology_based"
@@ -25,18 +25,18 @@ class PreFilter:
         self.model = model
         self.dataset = dataset
 
-    def most_promising_samples_for(
-        self, sample_to_explain: Tuple[Any, Any, Any], perspective: str, top_k=50
+    def most_promising_triples_for(
+        self, triple_to_explain: Tuple[Any, Any, Any], perspective: str, top_k=50
     ):
         """
-        This method extracts the top k promising samples for interpreting the sample to explain,
+        This method extracts the top k promising triples for interpreting the triple to explain,
         from the perspective of either its head or its tail (that is, either featuring its head or its tail).
 
-        :param sample_to_explain: the sample to explain
+        :param triple_to_explain: the triple to explain
         :param perspective: a string conveying the explanation perspective. It can be either "head" or "tail":
-                                - if "head", find the most promising samples featuring the head of the sample to explain
-                                - if "tail", find the most promising samples featuring the tail of the sample to explain
-        :param top_k: the number of top promising samples to extract.
-        :return: the sorted list of the most promising samples.
+                                - if "head", find the most promising triples featuring the head of the triple to explain
+                                - if "tail", find the most promising triples featuring the tail of the triple to explain
+        :param top_k: the number of top promising triples to extract.
+        :return: the sorted list of the most promising triples.
         """
         pass

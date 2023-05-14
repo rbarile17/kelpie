@@ -1,5 +1,5 @@
 from typing import Tuple, Any
-from .dataset import Dataset
+from .data import Dataset
 
 from .prefilters import (
     TYPE_PREFILTER,
@@ -72,24 +72,24 @@ class Kelpie:
 
     def explain_sufficient(
         self,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
-        num_promising_samples: int = 50,
+        num_promising_triples: int = 50,
         num_entities_to_convert: int = 10,
         entities_to_convert: list = None,
     ):
         """
-        This method extracts sufficient explanations for a specific sample,
+        This method extracts sufficient explanations for a specific triple,
         from the perspective of either its head or its tail.
 
-        :param sample_to_explain: the sample to explain
+        :param triple_to_explain: the triple to explain
         :param perspective: a string conveying the perspective of the requested explanations.
                             It can be either "head" or "tail":
                                 - if "head", Kelpie answers the question
-                                    "given the sample head and relation, why is the sample tail predicted as tail?"
+                                    "given the triple head and relation, why is the triple tail predicted as tail?"
                                 - if "tail", Kelpie answers the question
-                                    "given the sample relation and tail, why is the sample head predicted as head?"
-        :param num_promising_samples: the number of samples relevant to the sample to explain
+                                    "given the triple relation and tail, why is the triple head predicted as head?"
+        :param num_promising_triples: the number of triples relevant to the triple to explain
                                      that must be identified and added to the extracted similar entities
                                      to verify whether they boost the target prediction or not
         :param num_entities_to_convert: the number of entities to convert to extract
@@ -99,24 +99,24 @@ class Kelpie:
 
         :return: two lists:
                     the first one contains, for each relevant n-ple extracted, a couple containing
-                                - that relevant sample
+                                - that relevant triple
                                 - its value of global relevance across the entities to convert
                     the second one contains the list of entities that the extractor has tried to convert
                         in the sufficient explanation process
 
         """
 
-        most_promising_samples = self.prefilter.most_promising_samples_for(
-            sample_to_explain=sample_to_explain,
+        most_promising_triples = self.prefilter.most_promising_triples_for(
+            triple_to_explain=triple_to_explain,
             perspective=perspective,
-            top_k=num_promising_samples,
+            top_k=num_promising_triples,
         )
 
         explanation_builder = StochasticSufficientExplanationBuilder(
             model=self.model,
             dataset=self.dataset,
             hyperparameters=self.hyperparameters,
-            sample_to_explain=sample_to_explain,
+            triple_to_explain=triple_to_explain,
             perspective=perspective,
             num_entities_to_convert=num_entities_to_convert,
             entities_to_convert=entities_to_convert,
@@ -125,28 +125,28 @@ class Kelpie:
         )
 
         explanations_with_relevance = explanation_builder.build_explanations(
-            samples_to_add=most_promising_samples
+            triples_to_add=most_promising_triples
         )
         return explanations_with_relevance, explanation_builder.entities_to_convert
 
     def explain_necessary(
         self,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
-        num_promising_samples: int = 50,
+        num_promising_triples: int = 50,
     ):
         """
-        This method extracts necessary explanations for a specific sample,
+        This method extracts necessary explanations for a specific triple,
         from the perspective of either its head or its tail.
 
-        :param sample_to_explain: the sample to explain
+        :param triple_to_explain: the triple to explain
         :param perspective: a string conveying the perspective of the requested explanations.
                             It can be either "head" or "tail":
                                 - if "head", Kelpie answers the question
-                                    "given the sample head and relation, why is the sample tail predicted as tail?"
+                                    "given the triple head and relation, why is the triple tail predicted as tail?"
                                 - if "tail", Kelpie answers the question
-                                    "given the sample relation and tail, why is the sample head predicted as head?"
-        :param num_promising_samples: the number of samples relevant to the sample to explain
+                                    "given the triple relation and tail, why is the triple head predicted as head?"
+        :param num_promising_triples: the number of triples relevant to the triple to explain
                                      that must be identified and removed from the entity under analysis
                                      to verify whether they worsen the target prediction or not
 
@@ -156,23 +156,23 @@ class Kelpie:
 
         """
 
-        most_promising_samples = self.prefilter.most_promising_samples_for(
-            sample_to_explain=sample_to_explain,
+        most_promising_triples = self.prefilter.most_promising_triples_for(
+            triple_to_explain=triple_to_explain,
             perspective=perspective,
-            top_k=num_promising_samples,
+            top_k=num_promising_triples,
         )
 
         explanation_builder = StochasticNecessaryExplanationBuilder(
             model=self.model,
             dataset=self.dataset,
             hyperparameters=self.hyperparameters,
-            sample_to_explain=sample_to_explain,
+            triple_to_explain=triple_to_explain,
             perspective=perspective,
             relevance_threshold=self.relevance_threshold,
             max_explanation_length=self.max_explanation_length,
         )
 
         explanations_with_relevance = explanation_builder.build_explanations(
-            samples_to_remove=most_promising_samples
+            triples_to_remove=most_promising_triples
         )
         return explanations_with_relevance

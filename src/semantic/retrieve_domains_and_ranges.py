@@ -5,6 +5,7 @@ from . import dataset, sparql
 
 tqdm.pandas()
 
+
 def get_domains_or_ranges(relation, to_get="domain"):
     relation_uri = f"<http://dbpedia.org/ontology/{relation}>"
     sparql.setQuery(
@@ -22,7 +23,7 @@ def get_domains_or_ranges(relation, to_get="domain"):
     return set([row["sub_result"]["value"] for row in rows])
 
 
-relations = pd.DataFrame(dataset.relations, columns=["relation"])
+relations = pd.DataFrame((dataset.relation_to_id.keys()), columns=["relation"])
 relations["domains"] = relations["relation"].progress_map(get_domains_or_ranges)
 relations["ranges"] = relations["relation"].progress_map(
     lambda relation: get_domains_or_ranges(relation, "range")

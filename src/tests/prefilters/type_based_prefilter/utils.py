@@ -1,13 +1,12 @@
-import numpy as np
 from collections import defaultdict
 
 
-def get_fake_samples(
+def get_fake_triples(
     dataset, entity_in_prediction, entity_to_analyze, relation_to_analyze, inverse=False
 ):
     direct_relations = defaultdict(int)
     inverse_relations = defaultdict(int)
-    for head, relation, tail in dataset.train_samples:
+    for head, relation, tail in dataset.training_triples:
         if head == entity_in_prediction:
             direct_relations[relation] += 1
 
@@ -35,14 +34,14 @@ def get_fake_samples(
     ]
 
 
-def remove_related_samples(dataset, sample_to_analyze):
-    head_to_analyze, _, tail_to_analyze = sample_to_analyze
-    samples_to_remove = []
-    for head, relation, tail in dataset.train_samples:
+def remove_related_triples(dataset, triple_to_analyze):
+    head_to_analyze, _, tail_to_analyze = triple_to_analyze
+    triples_to_remove = []
+    for head, relation, tail in dataset.training_triples:
         if head == tail_to_analyze or head == head_to_analyze:
-            samples_to_remove.append((head, relation, tail))
+            triples_to_remove.append((head, relation, tail))
         if tail == tail_to_analyze or tail == head_to_analyze:
-            samples_to_remove.append((head, relation, tail))
-    dataset.remove_training_samples(np.array(samples_to_remove))
-    dataset.add_training_samples(np.array([sample_to_analyze]))
+            triples_to_remove.append((head, relation, tail))
+    dataset.remove_training_triples(set(triples_to_remove))
+    dataset.add_training_triple(triple_to_analyze)
     

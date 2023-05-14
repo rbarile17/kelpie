@@ -7,8 +7,8 @@ from src.relevance_engines import CriageEngine
 
 
 @pytest.fixture
-def highest_relevance_sample(dataset):
-    return dataset.fact_to_sample(
+def highest_relevance_triple(dataset):
+    return dataset.ids_triple(
         (
             "/m/0fc9js",
             "/award/award_category/category_of",
@@ -18,8 +18,8 @@ def highest_relevance_sample(dataset):
 
 
 @pytest.fixture
-def lowest_relevance_sample(dataset):
-    return dataset.fact_to_sample(
+def lowest_relevance_triple(dataset):
+    return dataset.ids_triple(
         (
             "/m/04g2jz2",
             "/award/award_category/category_of",
@@ -39,41 +39,41 @@ def criage_engine(dataset, model, hyperparameters):
 
 def test_removal_relevance_tail_perspective(
     criage_engine,
-    sample_to_explain,
-    highest_relevance_sample,
-    lowest_relevance_sample,
+    triple_to_explain,
+    highest_relevance_triple,
+    lowest_relevance_triple,
 ):
-    hr_fake_samples_relevance = criage_engine.removal_relevance(
-        sample_to_explain=sample_to_explain,
-        samples_to_remove=np.array([highest_relevance_sample]),
+    hr_fake_triples_relevance = criage_engine.removal_relevance(
+        triple_to_explain=triple_to_explain,
+        triples_to_remove=np.array([highest_relevance_triple]),
         perspective="tail",
     )
 
-    lr_fake_sample_relevance = criage_engine.removal_relevance(
-        sample_to_explain=sample_to_explain,
-        samples_to_remove=np.array([lowest_relevance_sample]),
+    lr_fake_triple_relevance = criage_engine.removal_relevance(
+        triple_to_explain=triple_to_explain,
+        triples_to_remove=np.array([lowest_relevance_triple]),
         perspective="tail",
     )
 
-    assert hr_fake_samples_relevance < lr_fake_sample_relevance
+    assert hr_fake_triples_relevance < lr_fake_triple_relevance
 
 
 def test_addition_relevance_tail_perspective(
     criage_engine,
-    sample_to_explain,
-    highest_relevance_sample,
-    lowest_relevance_sample,
+    triple_to_explain,
+    highest_relevance_triple,
+    lowest_relevance_triple,
 ):
-    hr_fake_samples_relevance = criage_engine.addition_relevance(
-        sample_to_convert=sample_to_explain,
-        samples_to_add=np.array([highest_relevance_sample]),
+    hr_fake_triples_relevance = criage_engine.addition_relevance(
+        triple_to_convert=triple_to_explain,
+        triples_to_add=np.array([highest_relevance_triple]),
         perspective="tail",
     )
 
-    lr_fake_sample_relevance = criage_engine.addition_relevance(
-        sample_to_convert=sample_to_explain,
-        samples_to_add=np.array([lowest_relevance_sample]),
+    lr_fake_triple_relevance = criage_engine.addition_relevance(
+        triple_to_convert=triple_to_explain,
+        triples_to_add=np.array([lowest_relevance_triple]),
         perspective="tail",
     )
 
-    assert hr_fake_samples_relevance > lr_fake_sample_relevance
+    assert hr_fake_triples_relevance > lr_fake_triple_relevance

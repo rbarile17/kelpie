@@ -1,14 +1,12 @@
 import pytest
 
-import numpy as np
-
 from src.tests.prefilters.fixtures import *
 from src.prefilters import CriagePreFilter
 
 
 @pytest.fixture
-def fake_most_promising_sample(dataset):
-    return dataset.fact_to_sample(
+def fake_most_promising_triple(dataset):
+    return dataset.ids_triple(
         (
             "/m/07z2lx",
             "/award/award_category/category_of",
@@ -18,14 +16,14 @@ def fake_most_promising_sample(dataset):
 
 
 @pytest.fixture
-def fake_dataset(dataset, sample_to_explain, fake_most_promising_sample):
-    head_to_explain, _, tail_to_explain = sample_to_explain
-    samples_to_remove = []
-    for head, relation, tail in dataset.train_samples:
+def fake_dataset(dataset, triple_to_explain, fake_most_promising_triple):
+    head_to_explain, _, tail_to_explain = triple_to_explain
+    triples_to_remove = []
+    for head, relation, tail in dataset.training_triples:
         if tail == head_to_explain or tail == tail_to_explain:
-            samples_to_remove.append((head, relation, tail))
-    dataset.remove_training_samples(np.array(samples_to_remove))
-    dataset.add_training_samples(np.array([fake_most_promising_sample]))
+            triples_to_remove.append((head, relation, tail))
+    dataset.remove_training_triples(triples_to_remove)
+    dataset.add_training_triple(fake_most_promising_triple)
 
     return dataset
 
@@ -36,13 +34,13 @@ def criage_prefilter(fake_dataset):
 
 
 def test_criage_prefilter(
-    criage_prefilter, sample_to_explain, fake_most_promising_sample
+    criage_prefilter, triple_to_explain, fake_most_promising_triple
 ):
-    [most_promising_sample] = criage_prefilter.most_promising_samples_for(
-        sample_to_explain=sample_to_explain,
+    [most_promising_triple] = criage_prefilter.most_promising_triples_for(
+        triple_to_explain=triple_to_explain,
         perspective="",
         top_k=1,
         verbose=True,
     )
 
-    assert most_promising_sample == fake_most_promising_sample
+    assert most_promising_triple == fake_most_promising_triple

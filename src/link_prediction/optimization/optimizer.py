@@ -18,17 +18,9 @@ class Optimizer:
 
     def train(
         self,
-        train_samples: numpy.array,
+        training_triples: numpy.array,
         save_path: str = None,
         evaluate_every: int = -1,
-        valid_samples: numpy.array = None,
+        valid_triples: numpy.array = None,
     ):
         pass
-
-    # def epoch(self,
-    #          batch_size: int,
-    #          training_samples: numpy.array):
-    #    pass
-
-    # def step_on_batch(self, loss, batch):
-    #    pass

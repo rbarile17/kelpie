@@ -4,21 +4,21 @@ from src.explanation_builders import StochasticNecessaryExplanationBuilder
 
 
 @pytest.fixture
-def stochastic_necessary_builder(model, dataset, hyperparameters, sample_to_explain):
+def stochastic_necessary_builder(model, dataset, hyperparameters, triple_to_explain):
     return StochasticNecessaryExplanationBuilder(
         model=model,
         dataset=dataset,
         hyperparameters=hyperparameters,
-        sample_to_explain=sample_to_explain,
+        triple_to_explain=triple_to_explain,
         perspective="head"
     )
 
 
 def test_build_explanations(
-    stochastic_necessary_builder, known_explanation_sample, known_not_in_explanation_sample
+    stochastic_necessary_builder, known_explanation_triple, known_not_in_explanation_triple
 ):
-    explanation_sample = stochastic_necessary_builder.build_explanations(
-        [known_explanation_sample, known_not_in_explanation_sample], top_k=1
+    explanation_triple = stochastic_necessary_builder.build_explanations(
+        [known_explanation_triple, known_not_in_explanation_triple], top_k=1
     )[0][0][0]
 
-    assert explanation_sample == known_explanation_sample
+    assert explanation_triple == known_explanation_triple

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Tuple, Any
 from .explanation_builder import SufficientExplanationBuilder
-from ..dataset import Dataset
+from ..data import Dataset
 from ..relevance_engines import CriageEngine
 from ..link_prediction.models import Model
 
@@ -17,7 +17,7 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
         model: Model,
         dataset: Dataset,
         hyperparameters: dict,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
         num_entities_to_convert=10,
         entities_to_convert=None,
@@ -28,13 +28,13 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
         :param model: the model to explain
         :param dataset: the dataset used to train the model
         :param hyperparameters: the hyperparameters of the model and of its optimization process
-        :param sample_to_explain
+        :param triple_to_explain
         :param perspective
         :param num_entities_to_convert
         """
 
         super().__init__(
-            model, dataset, sample_to_explain, perspective, num_entities_to_convert, 1
+            model, dataset, triple_to_explain, perspective, num_entities_to_convert, 1
         )
 
         self.engine = CriageEngine(
@@ -48,20 +48,20 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
             self.entities_to_convert = self.engine.extract_entities_for(
                 model=self.model,
                 dataset=self.dataset,
-                sample=sample_to_explain,
+                triple=triple_to_explain,
                 perspective=perspective,
                 k=num_entities_to_convert,
                 degree_cap=200,
             )
 
-    def build_explanations(self, samples_to_add: list, top_k: int = 10):
+    def build_explanations(self, triples_to_add: list, top_k: int = 10):
         rule_2_global_relevance = {}
 
-        head_to_explain, rel_to_explain, tail_to_explain = self.sample_to_explain
+        head_to_explain, rel_to_explain, tail_to_explain = self.triple_to_explain
 
         # try all rules with length 1 are tested
-        for i, sample_to_add in enumerate(samples_to_add):
-            head_to_add, rel_to_add, tail_to_add = sample_to_add
+        for i, triple_to_add in enumerate(triples_to_add):
+            head_to_add, rel_to_add, tail_to_add = triple_to_add
 
             if tail_to_add == tail_to_explain:
                 perspective = "tail"
@@ -71,14 +71,14 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
                 raise ValueError
 
             print(
-                "\n\tComputing relevance for sample "
+                "\n\tComputing relevance for triple "
                 + str(i)
                 + " on "
-                + str(len(samples_to_add))
+                + str(len(triples_to_add))
                 + ": "
-                + self.dataset.printable_sample(sample_to_add)
+                + self.dataset.printable_triple(triple_to_add)
             )
-            rule = tuple([sample_to_add])
+            rule = tuple([triple_to_add])
             global_relevance = self._compute_relevance_for_rule(
                 rule=rule, perspective=perspective
             )
@@ -95,15 +95,15 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
         assert len(rule[0]) == 3
         assert rule_length == 1
 
-        sample_to_add = rule[0]
+        triple_to_add = rule[0]
 
         rule_2_individual_relevances = defaultdict(lambda: [])
         outlines = []
 
         if perspective == "head":
-            assert sample_to_add[2] == self.sample_to_explain[0]
+            assert triple_to_add[2] == self.triple_to_explain[0]
         else:
-            assert sample_to_add[2] == self.sample_to_explain[2]
+            assert triple_to_add[2] == self.triple_to_explain[2]
 
         for j, entity_to_convert in enumerate(self.entities_to_convert):
             print(
@@ -112,49 +112,47 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
                 + " on "
                 + str(self.num_entities_to_convert)
                 + ": "
-                + self.dataset.entity_id_2_name[entity_to_convert]
+                + self.dataset.id_to_entity[entity_to_convert]
             )
 
             if perspective == "head":
-                r_sample_to_add = (
-                    sample_to_add[0],
-                    sample_to_add[1],
+                r_triple_to_add = (
+                    triple_to_add[0],
+                    triple_to_add[1],
                     entity_to_convert,
                 )
-                r_sample_to_convert = (
+                r_triple_to_convert = (
                     entity_to_convert,
-                    self.sample_to_explain[1],
-                    self.sample_to_explain[2],
+                    self.triple_to_explain[1],
+                    self.triple_to_explain[2],
                 )
             else:
-                r_sample_to_add = (
-                    sample_to_add[0],
-                    sample_to_add[1],
+                r_triple_to_add = (
+                    triple_to_add[0],
+                    triple_to_add[1],
                     entity_to_convert,
                 )
-                r_sample_to_convert = (
-                    self.sample_to_explain[0],
-                    self.sample_to_explain[1],
+                r_triple_to_convert = (
+                    self.triple_to_explain[0],
+                    self.triple_to_explain[1],
                     entity_to_convert,
                 )
 
-            r_triple_to_convert = self.dataset.sample_to_fact(r_sample_to_convert)
-
-            # if rule length is 1 try all r_samples_to_add and get their individual relevances
+            # if rule length is 1 try all r_triples_to_add and get their individual relevances
             individual_relevance = self.engine.addition_relevance(
-                sample_to_convert=r_sample_to_convert,
+                triple_to_convert=r_triple_to_convert,
                 perspective=perspective,
-                samples_to_add=[r_sample_to_add],
+                triples_to_add=[r_triple_to_add],
             )
 
             rule_2_individual_relevances[rule].append(individual_relevance)
 
             outlines.append(
-                ";".join(self.triple_to_explain)
+                ";".join(self.dataset.labels_triple(self.triple_to_explain))
                 + ";"
-                + ";".join(r_triple_to_convert)
+                + ";".join(self.dataset.labels_triple(r_triple_to_convert))
                 + ";"
-                + ";".join(self.dataset.sample_to_fact(sample_to_add))
+                + ";".join(self.dataset.labels_triple(triple_to_add))
                 + ";"
                 + str(individual_relevance)
             )

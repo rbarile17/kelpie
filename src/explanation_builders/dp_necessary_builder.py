@@ -1,7 +1,7 @@
 from typing import Tuple, Any
 from pprint import pprint
 from .explanation_builder import NecessaryExplanationBuilder
-from ..dataset import Dataset
+from ..data import Dataset
 from ..relevance_engines import DataPoisoningEngine
 from ..link_prediction.models import Model, LEARNING_RATE
 
@@ -18,7 +18,7 @@ class DataPoisoningNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         model: Model,
         dataset: Dataset,
         hyperparameters: dict,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
     ):
         """
@@ -30,7 +30,7 @@ class DataPoisoningNecessaryExplanationBuilder(NecessaryExplanationBuilder):
         :param perspective
         """
 
-        super().__init__(model, dataset, sample_to_explain, perspective, 1)
+        super().__init__(model, dataset, triple_to_explain, perspective, 1)
 
         self.engine = DataPoisoningEngine(
             model=model,
@@ -39,32 +39,32 @@ class DataPoisoningNecessaryExplanationBuilder(NecessaryExplanationBuilder):
             epsilon=hyperparameters[LEARNING_RATE],
         )
 
-    def build_explanations(self, samples_to_remove: list, top_k: int = 10):
+    def build_explanations(self, triples_to_remove: list, top_k: int = 10):
         rule_2_relevance = {}
 
-        for i, sample_to_remove in enumerate(samples_to_remove):
+        for i, triple_to_remove in enumerate(triples_to_remove):
             print(
-                "\n\tComputing relevance for sample "
+                "\n\tComputing relevance for triple "
                 + str(i)
                 + " on "
-                + str(len(samples_to_remove))
+                + str(len(triples_to_remove))
                 + ": "
-                + self.dataset.printable_sample(sample_to_remove)
+                + self.dataset.printable_triple(triple_to_remove)
             )
 
             (
                 relevance,
                 original_target_entity_score,
                 original_target_entity_rank,
-                original_removed_sample_score,
-                perturbed_removed_sample_score,
+                original_removed_triple_score,
+                perturbed_removed_triple_score,
             ) = self.engine.removal_relevance(
-                sample_to_explain=self.sample_to_explain,
+                triple_to_explain=self.triple_to_explain,
                 perspective=self.perspective,
-                samples_to_remove=[sample_to_remove],
+                triples_to_remove=[triple_to_remove],
             )
 
-            rule_2_relevance[tuple([sample_to_remove])] = relevance
+            rule_2_relevance[tuple([triple_to_remove])] = relevance
 
         pprint(rule_2_relevance)
         return sorted(rule_2_relevance.items(), key=lambda x: x[1], reverse=True)[

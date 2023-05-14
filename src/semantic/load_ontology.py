@@ -6,7 +6,7 @@ from ast import literal_eval
 from owlready2 import *
 
 from . import DBPEDIA50_PATH
-from src.dataset import Dataset
+from ..data import Dataset
 
 
 tqdm.pandas()
@@ -25,7 +25,7 @@ entities = pd.read_csv(
 
 
 def load_triple(triple):
-    head, relation, tail = triple
+    head, relation, tail = dataset.labels_triple(triple)
     if head in entity_names and tail in entity_names:
         with dbr:
             value = dbr[head].__dict__.get(relation, [])
@@ -91,15 +91,9 @@ for _, (entity, classes) in entities.iterrows():
         with dbr:
             Thing(entity)
 
-dataset = Dataset(name="DBpedia50", separator="\t", load=True)
+dataset = Dataset(dataset="DBpedia50")
 
-for triple in tqdm(dataset.train_triples):
-    load_triple(triple)
-
-for triple in tqdm(dataset.valid_triples):
-    load_triple(triple)
-
-for triple in tqdm(dataset.test_triples):
+for triple in tqdm(dataset.training_triples):
     load_triple(triple)
 
 onto.save(str((DBPEDIA50_PATH / "DBpedia50.owl")))

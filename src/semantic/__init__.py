@@ -2,7 +2,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
 
-from ..dataset import Dataset
+from ..data import Dataset
 
 dataset = Dataset(dataset="DBpedia50")
 

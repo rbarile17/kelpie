@@ -3,7 +3,7 @@ import numpy
 from collections import defaultdict
 from typing import Tuple, Any
 from .explanation_builder import SufficientExplanationBuilder
-from ..dataset import Dataset
+from ..data import Dataset
 from ..relevance_engines import DataPoisoningEngine
 from ..link_prediction.models import Model, LEARNING_RATE
 
@@ -19,7 +19,7 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
         model: Model,
         dataset: Dataset,
         hyperparameters: dict,
-        sample_to_explain: Tuple[Any, Any, Any],
+        triple_to_explain: Tuple[Any, Any, Any],
         perspective: str,
         num_entities_to_convert=10,
         entities_to_convert=None,
@@ -30,13 +30,13 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
         :param model: the model to explain
         :param dataset: the dataset used to train the model
         :param hyperparameters: the hyperparameters of the model and of its optimization process
-        :param sample_to_explain
+        :param triple_to_explain
         :param perspective
         :param num_entities_to_convert
         """
 
         super().__init__(
-            model, dataset, sample_to_explain, perspective, num_entities_to_convert, 1
+            model, dataset, triple_to_explain, perspective, num_entities_to_convert, 1
         )
 
         self.engine = DataPoisoningEngine(
@@ -53,26 +53,26 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
             self.entities_to_convert = self.engine.extract_entities_for(
                 model=self.model,
                 dataset=self.dataset,
-                sample=sample_to_explain,
+                triple=triple_to_explain,
                 perspective=perspective,
                 k=num_entities_to_convert,
                 degree_cap=200,
             )
 
-    def build_explanations(self, samples_to_add: list, top_k: int = 10):
+    def build_explanations(self, triples_to_add: list, top_k: int = 10):
         rule_2_global_relevance = {}
 
         # this is an exception: all rules with length 1 are tested
-        for i, sample_to_add in enumerate(samples_to_add):
+        for i, triple_to_add in enumerate(triples_to_add):
             print(
-                "\n\tComputing relevance for sample "
+                "\n\tComputing relevance for triple "
                 + str(i)
                 + " on "
-                + str(len(samples_to_add))
+                + str(len(triples_to_add))
                 + ": "
-                + self.dataset.printable_sample(sample_to_add)
+                + self.dataset.printable_triple(triple_to_add)
             )
-            rule = tuple([sample_to_add])
+            rule = tuple([triple_to_add])
             global_relevance = self._compute_relevance_for_rule(rule)
             rule_2_global_relevance[rule] = global_relevance
             print("\tObtained global relevance: " + str(global_relevance))
@@ -86,7 +86,7 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
         assert len(rule[0]) == 3
         assert rule_length == 1
 
-        sample_to_add = rule[0]
+        triple_to_add = rule[0]
 
         rule_2_individual_relevances = defaultdict(lambda: [])
         outlines = []
@@ -98,49 +98,48 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
                 + " on "
                 + str(self.num_entities_to_convert)
                 + ": "
-                + self.dataset.entity_id_2_name[entity_to_convert]
+                + self.dataset.id_to_entity[entity_to_convert]
             )
 
-            r_nple_to_add = Dataset.replace_entity_in_samples(
-                samples=rule,
+            r_nple_to_add = Dataset.replace_entity_in_triples(
+                triples=rule,
                 old_entity=self.perspective_entity,
                 new_entity=entity_to_convert,
                 as_numpy=False,
             )
-            r_sample_to_convert = Dataset.replace_entity_in_sample(
-                self.sample_to_explain, self.perspective_entity, entity_to_convert
+            r_triple_to_convert = Dataset.replace_entity_in_triple(
+                self.triple_to_explain, self.perspective_entity, entity_to_convert
             )
-            r_triple_to_convert = self.dataset.sample_to_fact(r_sample_to_convert)
 
-            # if rule length is 1 try all r_samples_to_add and get their individual relevances
+            # if rule length is 1 try all r_triples_to_add and get their individual relevances
             (
                 individual_relevance,
                 original_target_entity_score,
                 original_target_entity_rank,
-                original_added_sample_score,
-                perturbed_added_sample_score,
+                original_added_triple_score,
+                perturbed_added_triple_score,
             ) = self.engine.addition_relevance(
-                sample_to_convert=r_sample_to_convert,
+                triple_to_convert=r_triple_to_convert,
                 perspective=self.perspective,
-                samples_to_add=r_nple_to_add,
+                triples_to_add=r_nple_to_add,
             )
 
             rule_2_individual_relevances[rule].append(individual_relevance)
 
             outlines.append(
-                ";".join(self.triple_to_explain)
+                ";".join(self.dataset.labels_triple(self.triple_to_explain))
                 + ";"
-                + ";".join(r_triple_to_convert)
+                + ";".join(self.dataset.labels_triple(r_triple_to_convert))
                 + ";"
-                + ";".join(self.dataset.sample_to_fact(sample_to_add))
+                + ";".join(self.dataset.labels_triple(triple_to_add))
                 + ";"
                 + str(original_target_entity_score)
                 + ";"
                 + str(original_target_entity_rank)
                 + ";"
-                + str(original_added_sample_score)
+                + str(original_added_triple_score)
                 + ";"
-                + str(perturbed_added_sample_score)
+                + str(perturbed_added_triple_score)
                 + ";"
                 + str(individual_relevance)
             )
@@ -150,5 +149,5 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
 
         return global_relevance
 
-    def _preliminary_rule_score(self, rule, sample_2_relevance):
-        return numpy.sum([sample_2_relevance[x] for x in rule])
+    def _preliminary_rule_score(self, rule, triple_2_relevance):
+        return numpy.sum([triple_2_relevance[x] for x in rule])

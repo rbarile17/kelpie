@@ -15,17 +15,16 @@ from .model import (
     HIDDEN_LAYER_SIZE,
     KelpieModel,
 )
-from ...dataset import Dataset
-from ...kelpie_dataset import KelpieDataset
+from ...data import Dataset, KelpieDataset
 
 
 class ConvE(Model):
     """
     The ConvE class provides a Model implementation in PyTorch for the ConvE system.
 
-    In training or evaluation, ConvE class requires samples to be passed as 2-dimensional np.arrays.
-    Each row corresponds to a sample and contains the integer ids of its head, relation and tail.
-    Only *direct* samples should be passed to the model.
+    In training or evaluation, ConvE class requires triples to be passed as 2-dimensional np.arrays.
+    Each row corresponds to a triple and contains the integer ids of its head, relation and tail.
+    Only *direct* triples should be passed to the model.
 
     TODO: add documentation about inverse facts and relations
     TODO: explain that the input must always be direct facts only
@@ -49,7 +48,7 @@ class ConvE(Model):
         self.name = "ConvE"
         self.dataset = dataset
         self.num_entities = dataset.num_entities  # number of entities in dataset
-        self.num_relations = dataset.num_relations  # number of relations in dataset
+        self.num_relations = 2 * dataset.num_relations  # number of relations in dataset
 
         self.dimension = hyperparameters[DIMENSION]  # embedding dimension
         self.input_dropout_rate = hyperparameters[
@@ -115,31 +114,31 @@ class ConvE(Model):
         """
         return False
 
-    def forward(self, samples: np.array):
+    def forward(self, triples: np.array):
         """
-        Perform forward propagation on the passed samples
-        :param samples: a 2-dimensional numpy array containing the samples to use in forward propagation, one per row
+        Perform forward propagation on the passed triples
+        :param triples: a 2-dimensional numpy array containing the triples to use in forward propagation, one per row
         :return: a tuple containing
-                    - the scores for each passed sample with all possible tails
+                    - the scores for each passed triple with all possible tails
                     - a partial result to use in regularization
         """
-        return self.all_scores(samples)
+        return self.all_scores(triples)
 
-    def score(self, samples: np.array) -> np.array:
+    def score(self, triples: np.array) -> np.array:
         """
-        Compute scores for the passed samples
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a numpy array containing the scores of the passed samples
+        Compute scores for the passed triples
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a numpy array containing the scores of the passed triples
         """
         # compute scores for each possible tail
-        all_scores = self.all_scores(samples)
+        all_scores = self.all_scores(triples)
 
-        # extract from all_scores the specific scores for the initial samples
-        samples_scores = []
-        for i, (head_index, relation_index, tail_index) in enumerate(samples):
-            samples_scores.append(all_scores[i][tail_index])
+        # extract from all_scores the specific scores for the initial triples
+        triples_scores = []
+        for i, (head_index, relation_index, tail_index) in enumerate(triples):
+            triples_scores.append(all_scores[i][tail_index])
 
-        return np.array(samples_scores)
+        return np.array(triples_scores)
 
     def score_embeddings(
         self,
@@ -176,19 +175,19 @@ class ConvE(Model):
 
         return output_scores
 
-    def criage_first_step(self, samples: np.array):
-        head_embeddings = self.entity_embeddings[samples[:, 0]]
+    def criage_first_step(self, triples: np.array):
+        head_embeddings = self.entity_embeddings[triples[:, 0]]
         head_embeddings = head_embeddings.view(
             -1, 1, self.embedding_width, self.embedding_height
         )
 
         # list of relation embeddings for the relations of the heads
-        relation_embeddings = self.relation_embeddings[samples[:, 1]]
+        relation_embeddings = self.relation_embeddings[triples[:, 1]]
         relation_embeddings = relation_embeddings.view(
             -1, 1, self.embedding_width, self.embedding_height
         )
 
-        # tail_embeddings = self.entity_embeddings[samples[:, 2]].view(-1, 1, self.embedding_width, self.embedding_height)
+        # tail_embeddings = self.entity_embeddings[triples[:, 2]].view(-1, 1, self.embedding_width, self.embedding_height)
 
         stacked_inputs = torch.cat([head_embeddings, relation_embeddings], 2)
         stacked_inputs = self.batch_norm_1(stacked_inputs)
@@ -215,26 +214,26 @@ class ConvE(Model):
         output_scores = torch.diagonal(scores)
         return output_scores
 
-    def all_scores(self, samples: np.array) -> np.array:
+    def all_scores(self, triples: np.array) -> np.array:
         """
-        For each of the passed samples, compute scores for all possible tail entities.
-        :param samples: a 2-dimensional numpy array containing the samples to score, one per row
-        :return: a 2-dimensional numpy array that, for each sample, contains a row for each passed sample
+        For each of the passed triples, compute scores for all possible tail entities.
+        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
+        :return: a 2-dimensional numpy array that, for each triple, contains a row for each passed triple
                  and a column for each possible tail
         """
         # list of entity embeddings for the heads of the facts
-        head_embeddings = self.entity_embeddings[samples[:, 0]]
+        head_embeddings = self.entity_embeddings[triples[:, 0]]
         head_embeddings = head_embeddings.view(
             -1, 1, self.embedding_width, self.embedding_height
         )
 
         # list of relation embeddings for the relations of the heads
-        relation_embeddings = self.relation_embeddings[samples[:, 1]]
+        relation_embeddings = self.relation_embeddings[triples[:, 1]]
         relation_embeddings = relation_embeddings.view(
             -1, 1, self.embedding_width, self.embedding_height
         )
 
-        # tail_embeddings = self.entity_embeddings[samples[:, 2]].view(-1, 1, self.embedding_width, self.embedding_height)
+        # tail_embeddings = self.entity_embeddings[triples[:, 2]].view(-1, 1, self.embedding_width, self.embedding_height)
 
         stacked_inputs = torch.cat([head_embeddings, relation_embeddings], 2)
         stacked_inputs = self.batch_norm_1(stacked_inputs)
@@ -257,40 +256,40 @@ class ConvE(Model):
 
         return pred
 
-    def predict_samples(self, samples: np.array) -> Tuple[Any, Any, Any]:
+    def predict_triples(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """
-        This method takes as an input a tensor of 'direct' samples,
+        This method takes as an input a tensor of 'direct' triples,
         runs head and tail prediction on each of them
         and returns
-            - the obtained scores for direct and inverse version of each sample,
-            - the obtained head and tail ranks for each sample
-            - the list of predicted entities for each sample
-        :param samples: a torch.Tensor containing all the DIRECT samples to predict.
+            - the obtained scores for direct and inverse version of each triple,
+            - the obtained head and tail ranks for each triple
+            - the list of predicted entities for each triple
+        :param triples: a torch.Tensor containing all the DIRECT triples to predict.
                         They will be automatically inverted to perform head prediction
 
-        :return: three dicts mapping each passed direct sample (in Tuple format) respectively to
-                    - the scores of that direct sample and of the corresponding inverse sample;
-                    - the head and tail rank for that sample;
-                    - the head and tail predictions for that sample
+        :return: three dicts mapping each passed direct triple (in Tuple format) respectively to
+                    - the scores of that direct triple and of the corresponding inverse triple;
+                    - the head and tail rank for that triple;
+                    - the head and tail predictions for that triple
         """
 
         scores, ranks, predictions = [], [], []  # output data structures
-        direct_samples = samples
+        direct_triples = triples
 
-        # assert all samples are direct
-        assert (samples[:, 1] < self.dataset.num_direct_relations).all()
+        # assert all triples are direct
+        assert (triples[:, 1] < self.dataset.num_relations).all()
 
-        # invert samples to perform head predictions
-        inverse_samples = self.dataset.invert_samples(direct_samples)
+        # invert triples to perform head predictions
+        inverse_triples = self.dataset.invert_triples(direct_triples)
 
-        # obtain scores, ranks and predictions both for direct and inverse samples
+        # obtain scores, ranks and predictions both for direct and inverse triples
         inverse_scores, head_ranks, head_predictions = self.predict_tails(
-            inverse_samples
+            inverse_triples
         )
-        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_samples)
+        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_triples)
 
-        for i in range(direct_samples.shape[0]):
-            # add to the scores list a couple containing the scores of the direct and of the inverse sample
+        for i in range(direct_triples.shape[0]):
+            # add to the scores list a couple containing the scores of the direct and of the inverse triple
             scores += [(direct_scores[i], inverse_scores[i])]
 
             # add to the ranks list a couple containing the ranks of the head and of the tail
@@ -301,10 +300,10 @@ class ConvE(Model):
 
         return scores, ranks, predictions
 
-    def predict_tails(self, samples: np.array) -> Tuple[Any, Any, Any]:
+    def predict_tails(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """
         Returns filtered scores, ranks and predicted entities for each passed fact.
-        :param samples: a torch.LongTensor of triples (head, relation, tail).
+        :param triples: a torch.LongTensor of triples (head, relation, tail).
                       The triples can also be "inverse triples" with (tail, inverse_relation_id, head)
         :return:
         """
@@ -312,27 +311,27 @@ class ConvE(Model):
         scores, ranks, pred_out = [], [], []
 
         batch_size = 128
-        for i in range(0, samples.shape[0], batch_size):
-            batch = samples[i : min(i + batch_size, len(samples))]
+        for i in range(0, triples.shape[0], batch_size):
+            batch = triples[i : min(i + batch_size, len(triples))]
 
             all_scores = self.all_scores(batch)
 
             tail_indexes = torch.tensor(
                 batch[:, 2]
-            ).cuda()  # tails of all passed samples
+            ).cuda()  # tails of all passed triples
 
-            # for each sample to predict
-            for sample_number, (head_id, relation_id, tail_id) in enumerate(batch):
+            # for each triple to predict
+            for triple_number, (head_id, relation_id, tail_id) in enumerate(batch):
                 tails_to_filter = self.dataset.to_filter[(head_id, relation_id)]
 
-                # score obtained by the correct tail of the sample
-                target_tail_score = all_scores[sample_number, tail_id].item()
+                # score obtained by the correct tail of the triple
+                target_tail_score = all_scores[triple_number, tail_id].item()
                 scores.append(target_tail_score)
 
                 # set to 0.0 all the predicted values for all the correct tails for that Head-Rel couple
-                all_scores[sample_number, tails_to_filter] = 0.0
+                all_scores[triple_number, tails_to_filter] = 0.0
                 # re-set the predicted value for that tail to the original value
-                all_scores[sample_number, tail_id] = target_tail_score
+                all_scores[triple_number, tail_id] = target_tail_score
 
             # this amounts to using ORDINAL policy
             sorted_values, sorted_indexes = torch.sort(
@@ -426,35 +425,35 @@ class KelpieConvE(KelpieModel, ConvE):
         self.batch_norm_3.eval()
 
     # Override
-    def predict_samples(self, samples: np.array, original_mode: bool = False):
+    def predict_triples(self, triples: np.array, original_mode: bool = False):
         """
-        This method overrides the Model predict_samples method
+        This method overrides the Model predict_triples method
         by adding the possibility to run predictions in original_mode
         which means ...
-        :param samples: the DIRECT samples. Will be inverted to perform head prediction
+        :param triples: the DIRECT triples. Will be inverted to perform head prediction
         :param original_mode:
         :return:
         """
 
-        direct_samples = samples
+        direct_triples = triples
 
-        # assert all samples are direct
-        assert (samples[:, 1] < self.dataset.num_direct_relations).all()
+        # assert all triples are direct
+        assert (triples[:, 1] < self.dataset.num_relations).all()
 
-        # if we are in original_mode, make sure that the kelpie entity is not featured in the samples to predict
-        # otherwise, make sure that the original entity is not featured in the samples to predict
+        # if we are in original_mode, make sure that the kelpie entity is not featured in the triples to predict
+        # otherwise, make sure that the original entity is not featured in the triples to predict
         forbidden_entity_id = (
             self.kelpie_entity_id if original_mode else self.original_entity_id
         )
-        assert np.isin(forbidden_entity_id, direct_samples[:][0, 2]) == False
+        assert np.isin(forbidden_entity_id, direct_triples[:][0, 2]) == False
 
         # use the ConvE implementation method to obtain scores, ranks and prediction results.
         # these WILL feature the forbidden entity, so we now need to filter them
-        scores, ranks, predictions = ConvE.predict_samples(self, direct_samples)
+        scores, ranks, predictions = ConvE.predict_triples(self, direct_triples)
 
         # remove any reference to the forbidden entity id
         # (that may have been included in the predicted entities)
-        for i in range(len(direct_samples)):
+        for i in range(len(direct_triples)):
             head_predictions, tail_predictions = predictions[i]
             head_rank, tail_rank = ranks[i]
 
@@ -486,17 +485,17 @@ class KelpieConvE(KelpieModel, ConvE):
         return scores, ranks, predictions
 
     # Override
-    def predict_sample(self, sample: np.array, original_mode: bool = False):
+    def predict_triple(self, triple: np.array, original_mode: bool = False):
         """
         Override the
-        :param sample: the DIRECT sample. Will be inverted to perform head prediction
+        :param triple: the DIRECT triple. Will be inverted to perform head prediction
         :param original_mode:
         :return:
         """
 
-        assert sample[1] < self.dataset.num_direct_relations
+        assert triple[1] < self.dataset.num_relations
 
-        scores, ranks, predictions = self.predict_samples(
-            np.array([sample]), original_mode
+        scores, ranks, predictions = self.predict_triples(
+            np.array([triple]), original_mode
         )
         return scores[0], ranks[0], predictions[0]

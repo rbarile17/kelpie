@@ -4,7 +4,8 @@ import numpy
 import torch
 
 from .config import MODEL_PATH
-from .dataset import ALL_DATASET_NAMES, Dataset
+from .data import ALL_DATASET_NAMES
+from .data import Dataset
 
 from .link_prediction.evaluation import Evaluator
 from .link_prediction.optimization import MultiClassNLLOptimizer
@@ -50,7 +51,7 @@ parser.add_argument(
     "--batch_size",
     default=1000,
     type=int,
-    help="Number of samples in each mini-batch in SGD, Adagrad and Adam optimization",
+    help="Number of triples in each mini-batch in SGD, Adagrad and Adam optimization",
 )
 
 parser.add_argument("--reg", default=0, type=float, help="Regularization weight")
@@ -91,7 +92,7 @@ else:
         os.makedirs(MODEL_PATH)
 
 print("Loading %s dataset..." % args.dataset)
-dataset = Dataset(name=args.dataset, separator="\t", load=True)
+dataset = Dataset(dataset=args.dataset)
 
 
 hyperparameters = {
@@ -119,15 +120,15 @@ print("Training model...")
 optimizer = MultiClassNLLOptimizer(model=model, hyperparameters=hyperparameters)
 
 optimizer.train(
-    train_samples=dataset.train_samples,
+    training_triples=dataset.training_triples,
     save_path=model_path,
     evaluate_every=args.valid,
-    valid_samples=dataset.valid_samples,
+    valid_triples=dataset.validation_triples,
 )
 
 print("Evaluating model...")
 mrr, h1, h10, mr = Evaluator(model=model).evaluate(
-    samples=dataset.test_samples, write_output=False
+    triples=dataset.testing_triples, write_output=False
 )
 print("\tTest Hits@1: %f" % h1)
 print("\tTest Hits@10: %f" % h10)

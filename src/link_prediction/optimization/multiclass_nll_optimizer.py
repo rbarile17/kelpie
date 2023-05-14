@@ -24,9 +24,9 @@ class MultiClassNLLOptimizer(Optimizer):
     """
     This optimizer relies on Multiclass Negative Log Likelihood loss.
     It is heavily inspired by paper ""
-    Instead of considering each training sample as the "unit" for training,
-    it groups training samples into couples (h, r) -> [all t for which <h, r, t> in training set].
-    Each couple (h, r) with the corresponding tails is treated as if it was one sample.
+    Instead of considering each training triple as the "unit" for training,
+    it groups training triples into couples (h, r) -> [all t for which <h, r, t> in training set].
+    Each couple (h, r) with the corresponding tails is treated as if it was one triple.
 
     When passing them to the loss...
 
@@ -76,30 +76,30 @@ class MultiClassNLLOptimizer(Optimizer):
 
     def train(
         self,
-        train_samples: np.array,
+        training_triples: np.array,
         save_path: str = None,
         evaluate_every: int = -1,
-        valid_samples: np.array = None,
+        valid_triples: np.array = None,
     ):
         # extract the direct and inverse train facts
-        all_training_samples = np.vstack(
-            (train_samples, self.model.dataset.invert_samples(train_samples))
+        all_training_triples = np.vstack(
+            (training_triples, self.model.dataset.invert_triples(training_triples))
         )
 
         # batch size must be the minimum between the passed value and the number of Kelpie training facts
-        batch_size = min(self.batch_size, len(all_training_samples))
+        batch_size = min(self.batch_size, len(all_training_triples))
 
         cur_loss = 0
         for e in range(self.epochs):
-            cur_loss = self.epoch(batch_size, all_training_samples)
+            cur_loss = self.epoch(batch_size, all_training_triples)
 
             if (
                 evaluate_every > 0
-                and valid_samples is not None
+                and valid_triples is not None
                 and (e + 1) % evaluate_every == 0
             ):
                 mrr, h1, h10, mr = self.evaluator.evaluate(
-                    samples=valid_samples, write_output=False
+                    triples=valid_triples, write_output=False
                 )
 
                 print("\tValidation Hits@1: %f" % h1)
@@ -117,22 +117,22 @@ class MultiClassNLLOptimizer(Optimizer):
             torch.save(self.model.state_dict(), save_path)
             print("\t done.")
 
-    def epoch(self, batch_size: int, training_samples: np.array):
-        training_samples = torch.from_numpy(training_samples).cuda()
+    def epoch(self, batch_size: int, training_triples: np.array):
+        training_triples = torch.from_numpy(training_triples).cuda()
 
-        # at the beginning of the epoch, shuffle all samples randomly
-        actual_samples = training_samples[torch.randperm(training_samples.shape[0]), :]
+        # at the beginning of the epoch, shuffle all triples randomly
+        actual_triples = training_triples[torch.randperm(training_triples.shape[0]), :]
         loss = nn.CrossEntropyLoss(reduction="mean")
 
         with tqdm.tqdm(
-            total=training_samples.shape[0], unit="ex", disable=not self.verbose
+            total=training_triples.shape[0], unit="ex", disable=not self.verbose
         ) as bar:
             bar.set_description("train loss")
 
             batch_start = 0
-            while batch_start < training_samples.shape[0]:
-                batch_end = min(batch_start + batch_size, training_samples.shape[0])
-                batch = actual_samples[batch_start:batch_end].cuda()
+            while batch_start < training_triples.shape[0]:
+                batch_end = min(batch_start + batch_size, training_triples.shape[0])
+                batch = actual_triples[batch_start:batch_end].cuda()
                 l = self.step_on_batch(loss, batch)
 
                 batch_start += self.batch_size
@@ -163,20 +163,20 @@ class KelpieMultiClassNLLOptimizer(MultiClassNLLOptimizer):
             self, model=model, hyperparameters=hyperparameters, verbose=verbose
         )
 
-    def epoch(self, batch_size: int, training_samples: np.array):
-        training_samples = torch.from_numpy(training_samples).cuda()
-        # at the beginning of the epoch, shuffle all samples randomly
-        actual_samples = training_samples[torch.randperm(training_samples.shape[0]), :]
+    def epoch(self, batch_size: int, training_triples: np.array):
+        training_triples = torch.from_numpy(training_triples).cuda()
+        # at the beginning of the epoch, shuffle all triples randomly
+        actual_triples = training_triples[torch.randperm(training_triples.shape[0]), :]
         loss = nn.CrossEntropyLoss(reduction="mean")
 
         with tqdm.tqdm(
-            total=training_samples.shape[0], unit="ex", disable=not self.verbose
+            total=training_triples.shape[0], unit="ex", disable=not self.verbose
         ) as bar:
             bar.set_description("train loss")
 
             batch_start = 0
-            while batch_start < training_samples.shape[0]:
-                batch = actual_samples[batch_start : batch_start + batch_size].cuda()
+            while batch_start < training_triples.shape[0]:
+                batch = actual_triples[batch_start : batch_start + batch_size].cuda()
                 l = self.step_on_batch(loss, batch)
 
                 # THIS IS THE ONE DIFFERENCE FROM THE ORIGINAL OPTIMIZER.
