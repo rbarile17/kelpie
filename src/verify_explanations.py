@@ -151,15 +151,15 @@ if args.mode == "sufficient":
         samples_to_explain.append(sample)
 
         # similar entities
-        similar_entities_names = similar_entities_line.strip().split(",")
+        similar_entities_names = similar_entities_line.strip().split("|")
         similar_entities = [dataset.entity_name_2_id[x] for x in similar_entities_names]
         sample_to_explain_2_entities_to_convert[sample] = similar_entities
 
         # rules
         rules_with_relevance = []
 
-        rule_relevance_inputs = rules_line.strip().split(",")
-        best_rule, best_rule_relevance_str = rule_relevance_inputs[0].split(":")
+        rule_relevance_inputs = rules_line.strip().split("|")
+        best_rule, best_rule_relevance_str = rule_relevance_inputs[0].split("::")
         best_rule_bits = best_rule.split(";")
 
         best_rule_facts = []
@@ -361,8 +361,8 @@ elif args.mode == "necessary":
         if rules_line.strip() != "":
             rules_with_relevance = []
 
-            rule_relevance_inputs = rules_line.strip().split(",")
-            best_rule, best_rule_relevance_str = rule_relevance_inputs[0].split(":")
+            rule_relevance_inputs = rules_line.strip().split("|")
+            best_rule, best_rule_relevance_str = rule_relevance_inputs[0].split("::")
             best_rule_bits = best_rule.split(";")
 
             best_rule_facts = []

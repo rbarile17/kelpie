@@ -297,15 +297,15 @@ for i, fact in enumerate(testing_facts):
                 dataset.sample_to_fact(sample) for sample in cur_rule_samples
             ]
             cur_rule_facts = ";".join([";".join(x) for x in cur_rule_facts])
-            rule_facts_with_relevance.append(cur_rule_facts + ":" + str(cur_relevance))
+            rule_facts_with_relevance.append(cur_rule_facts + "::" + str(cur_relevance))
 
         print(";".join(fact))
-        print(", ".join(entities_to_convert))
-        print(", ".join(rule_facts_with_relevance))
+        print(" | ".join(entities_to_convert))
+        print(" | ".join(rule_facts_with_relevance))
         print()
         output_lines.append(";".join(fact) + "\n")
-        output_lines.append(",".join(entities_to_convert) + "\n")
-        output_lines.append(",".join(rule_facts_with_relevance) + "\n")
+        output_lines.append("|".join(entities_to_convert) + "\n")
+        output_lines.append("|".join(rule_facts_with_relevance) + "\n")
         output_lines.append("\n")
 
     elif args.mode == "necessary":
@@ -322,12 +322,12 @@ for i, fact in enumerate(testing_facts):
                 dataset.sample_to_fact(sample) for sample in cur_rule_samples
             ]
             cur_rule_facts = ";".join([";".join(x) for x in cur_rule_facts])
-            rule_facts_with_relevance.append(cur_rule_facts + ":" + str(cur_relevance))
+            rule_facts_with_relevance.append(cur_rule_facts + "::" + str(cur_relevance))
         print(";".join(fact))
-        print(", ".join(rule_facts_with_relevance))
+        print("| ".join(rule_facts_with_relevance))
         print()
         output_lines.append(";".join(fact) + "\n")
-        output_lines.append(",".join(rule_facts_with_relevance) + "\n")
+        output_lines.append("|".join(rule_facts_with_relevance) + "\n")
         output_lines.append("\n")
 
 end_time = time.time()
