@@ -40,7 +40,7 @@ def fake_dataset(dataset, fake_most_promising_triple, triple_to_explain):
 
 @pytest.fixture
 def type_based_prefilter(fake_dataset):
-    return TypeBasedPreFilter(None, fake_dataset)
+    return TypeBasedPreFilter(fake_dataset)
 
 
 def test_head_to_explain_as_head(

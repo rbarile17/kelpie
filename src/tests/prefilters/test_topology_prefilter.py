@@ -21,7 +21,7 @@ def fake_dataset(dataset, fake_most_promising_triple):
 
 @pytest.fixture
 def topology_prefilter(fake_dataset):
-    return TopologyPreFilter(None, fake_dataset)
+    return TopologyPreFilter(fake_dataset)
 
 
 def test_head_perspective(

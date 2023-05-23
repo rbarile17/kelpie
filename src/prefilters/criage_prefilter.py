@@ -3,23 +3,16 @@ from typing import Tuple, Any
 
 from .prefilter import PreFilter
 from ..data import Dataset
-from ..link_prediction.models import Model
 
 
 class CriagePreFilter(PreFilter):
-    """
-    The CriagePreFilter object is a PreFilter that just returns all the triples
-    that have as tail the same tail as the triple to explain
+    """The CriagePreFilter object is a PreFilter that just returns all the triples
+    that have, as a tail, either the head or the tail of the triple to explain.
     """
 
-    def __init__(self, model: Model, dataset: Dataset):
-        """
-        CriagePreFilter object constructor.
-
-        :param model: the model to explain
-        :param dataset: the dataset used to train the model
-        """
-        super().__init__(model, dataset)
+    def __init__(self, dataset: Dataset):
+        """CriagePreFilter object constructor."""
+        super().__init__(dataset)
 
         self.tail_to_training_triples = defaultdict(list)
 
@@ -33,37 +26,27 @@ class CriagePreFilter(PreFilter):
         top_k=50,
         verbose=True,
     ):
-        """
+        """See base class.
         This method returns all training triples that have, as a tail,
         either the head or the tail of the triple to explain.
 
-        :param triple_to_explain: the triple to explain
         :param perspective: not used in Criage
-        :param top_k: the number of triples to return.
         :param verbose: not used in Criage
-        :return: the first top_k extracted triples.
         """
-
-        # note: perspective and verbose will be ignored
-
-        head, relation, tail = triple_to_explain
-
-        tail_as_tail_triples = []
-        if tail in self.tail_to_training_triples:
-            tail_as_tail_triples = self.tail_to_training_triples[tail]
-
-        head_as_tail_triples = []
-        if head in self.tail_to_training_triples:
-            head_as_tail_triples = self.tail_to_training_triples[head]
+        super().most_promising_triples_for(
+            triple_to_explain, perspective, top_k, verbose
+        )
+        head, _, tail = triple_to_explain
 
         tail_as_tail_triples = sorted(
-            tail_as_tail_triples, key=lambda x: (x[0], x[1], x[2])
+            self.tail_to_training_triples.get(tail, []),
+            key=lambda x: (x[0], x[1], x[2]),
         )
         head_as_tail_triples = sorted(
-            head_as_tail_triples, key=lambda x: (x[0], x[1], x[2])
+            self.tail_to_training_triples.get(head, []),
+            key=lambda x: (x[0], x[1], x[2]),
         )
 
         if top_k == -1:
             return tail_as_tail_triples + head_as_tail_triples
-        else:
-            return tail_as_tail_triples[:top_k] + head_as_tail_triples[:top_k]
+        return tail_as_tail_triples[:top_k] + head_as_tail_triples[:top_k]

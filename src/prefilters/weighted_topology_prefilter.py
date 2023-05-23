@@ -8,7 +8,6 @@ from .. import DBPEDIA50_REASONED_PATH
 
 from .prefilter import PreFilter
 from ..data import Dataset
-from ..link_prediction.models import Model
 from ..utils import jaccard_similarity
 
 
@@ -18,14 +17,13 @@ class WeightedTopologyPreFilter(PreFilter):
     to extract the most promising triples for an explanation.
     """
 
-    def __init__(self, model: Model, dataset: Dataset):
-        """
-        PostTrainingPreFilter object constructor.
+    def __init__(self, dataset: Dataset):
+        """PostTrainingPreFilter object constructor.
 
         :param model: the model to explain
         :param dataset: the dataset used to train the model
         """
-        super().__init__(model, dataset)
+        super().__init__(dataset)
 
         self.graph = nx.MultiGraph()
         self.graph.add_nodes_from(list(dataset.id_to_entity.keys()))
@@ -55,13 +53,13 @@ class WeightedTopologyPreFilter(PreFilter):
         verbose=True,
     ):
         """See base class."""
+
+        super().most_promising_triples_for(
+            triple_to_explain, perspective, top_k, verbose
+        )
+
         head, relation, tail = triple_to_explain
         self.relation_to_explain = relation
-
-        if verbose:
-            print(
-                f"Extracting promising facts for {self.dataset.printable_triple(triple_to_explain)}"
-            )
 
         start_entity, end_entity = (
             (head, tail) if perspective == "head" else (tail, head)

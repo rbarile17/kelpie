@@ -28,7 +28,7 @@ def triples_featuring_tail(dataset, triple_to_explain):
 
 @pytest.fixture
 def no_prefilter(dataset):
-    return NoPreFilter(None, dataset)
+    return NoPreFilter(dataset)
 
 
 def test_head_perspective(

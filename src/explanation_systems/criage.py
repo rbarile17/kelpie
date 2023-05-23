@@ -28,7 +28,7 @@ class Criage:
         self.dataset = dataset
         self.hyperparameters = hyperparameters
 
-        self.prefilter = CriagePreFilter(model=model, dataset=dataset)
+        self.prefilter = CriagePreFilter(dataset=dataset)
         self.engine = CriageEngine(
             model=model, dataset=dataset, hyperparameters=hyperparameters
         )

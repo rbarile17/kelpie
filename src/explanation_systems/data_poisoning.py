@@ -34,13 +34,13 @@ class DataPoisoning:
         self.hyperparameters = hyperparameters
 
         if prefilter_type == TOPOLOGY_PREFILTER:
-            self.prefilter = TopologyPreFilter(model=model, dataset=dataset)
+            self.prefilter = TopologyPreFilter(dataset=dataset)
         elif prefilter_type == TYPE_PREFILTER:
-            self.prefilter = TypeBasedPreFilter(model=model, dataset=dataset)
+            self.prefilter = TypeBasedPreFilter(dataset=dataset)
         elif prefilter_type == NO_PREFILTER:
-            self.prefilter = NoPreFilter(model=model, dataset=dataset)
+            self.prefilter = NoPreFilter(dataset=dataset)
         else:
-            self.prefilter = TopologyPreFilter(model=model, dataset=dataset)
+            self.prefilter = TopologyPreFilter(dataset=dataset)
         self.engine = DataPoisoningEngine(
             model=model,
             dataset=dataset,

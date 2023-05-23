@@ -30,7 +30,7 @@ def fake_dataset(dataset, triple_to_explain, fake_most_promising_triple):
 
 @pytest.fixture
 def criage_prefilter(fake_dataset):
-    return CriagePreFilter(None, fake_dataset)
+    return CriagePreFilter(fake_dataset)
 
 
 def test_criage_prefilter(

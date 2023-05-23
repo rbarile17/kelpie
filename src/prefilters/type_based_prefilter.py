@@ -8,7 +8,6 @@ from typing import Tuple, Any
 from .prefilter import PreFilter
 from ..config import MAX_PROCESSES
 from ..data import Dataset
-from ..link_prediction.models import Model
 
 
 class TypeBasedPreFilter(PreFilter):
@@ -17,18 +16,15 @@ class TypeBasedPreFilter(PreFilter):
     to extract the most promising triples for an explanation.
     """
 
-    def __init__(self, model: Model, dataset: Dataset):
-        """
-        TypeBasedPreFilter object constructor.
+    def __init__(self, dataset: Dataset):
+        """TypeBasedPreFilter object constructor."""
+        super().__init__(dataset)
 
-        :param model: the model to explain
-        :param dataset: the dataset used to train the model
-        """
-        super().__init__(model, dataset)
-
-        self.entity_id_2_training_triples = self.dataset.entity_to_training_triples
-        self.entity_id_2_relation_vector = defaultdict(
-            lambda: np.zeros((self.dataset.num_entities, self.dataset.num_relations * 2))
+        self.entity_to_training_triples = self.dataset.entity_to_training_triples
+        self.entity_to_relation_vector = defaultdict(
+            lambda: np.zeros(
+                (self.dataset.num_entities, self.dataset.num_relations * 2)
+            )
         )
 
         self.threadLock = threading.Lock()
@@ -36,8 +32,8 @@ class TypeBasedPreFilter(PreFilter):
         self.thread_pool = Pool(processes=MAX_PROCESSES)
 
         for head, relation, tail in dataset.training_triples:
-            self.entity_id_2_relation_vector[head][relation] += 1
-            self.entity_id_2_relation_vector[tail][
+            self.entity_to_relation_vector[head][relation] += 1
+            self.entity_to_relation_vector[tail][
                 relation + self.dataset.num_relations
             ] += 1
 
@@ -48,30 +44,17 @@ class TypeBasedPreFilter(PreFilter):
         top_k=50,
         verbose=True,
     ):
-        """
-        This method extracts the top k promising triples for interpreting the triple to explain,
-        from the perspective of either its head or its tail (that is, either featuring its head or its tail).
+        """See base class."""
+        super().most_promising_triples_for(
+            triple_to_explain, perspective, top_k, verbose
+        )
 
-        :param triple_to_explain: the triple to explain
-        :param perspective: a string conveying the explanation perspective. It can be either "head" or "tail":
-                                - if "head", find the most promising triples featuring the head of the triple to explain
-                                - if "tail", find the most promising triples featuring the tail of the triple to explain
-        :param top_k: the number of top promising triples to extract.
-        :param verbose:
-        :return: the sorted list of the k most promising triples.
-        """
         self.counter = 0
 
-        if verbose:
-            print(
-                "Type-based extraction of promising facts for"
-                + self.dataset.printable_triple(triple_to_explain)
-            )
-
-        head, relation, tail = triple_to_explain
+        head, _, tail = triple_to_explain
 
         if perspective == "head":
-            triples_featuring_head = self.entity_id_2_training_triples[head]
+            triples_featuring_head = self.entity_to_training_triples[head]
 
             worker_processes_inputs = [
                 (
@@ -104,7 +87,7 @@ class TypeBasedPreFilter(PreFilter):
             ]
 
         else:
-            triples_featuring_tail = self.entity_id_2_training_triples[tail]
+            triples_featuring_tail = self.entity_to_training_triples[tail]
 
             worker_processes_inputs = [
                 (
@@ -153,16 +136,11 @@ class TypeBasedPreFilter(PreFilter):
 
         if verbose:
             print(
-                "\tAnalyzing triple "
-                + str(i)
-                + " on "
-                + str(all_triples_number)
-                + ": "
-                + self.dataset.printable_triple(triple_to_analyze)
+                f"\tAnalyzing triple {i} on {all_triples_number}: {self.dataset.printable_triple(triple_to_analyze)}"
             )
 
-        head_to_explain, relation_to_explain, tail_to_explain = triple_to_explain
-        head_to_analyze, relation_to_analyze, tail_to_analyze = triple_to_analyze
+        head_to_explain, _, tail_to_explain = triple_to_explain
+        head_to_analyze, _, tail_to_analyze = triple_to_analyze
 
         promisingness = -1
         if perspective == "head":
@@ -190,8 +168,8 @@ class TypeBasedPreFilter(PreFilter):
         return promisingness
 
     def _cosine_similarity(self, entity1_id, entity2_id):
-        entity1_vector = self.entity_id_2_relation_vector[entity1_id]
-        entity2_vector = self.entity_id_2_relation_vector[entity2_id]
+        entity1_vector = self.entity_to_relation_vector[entity1_id]
+        entity2_vector = self.entity_to_relation_vector[entity2_id]
         return np.inner(entity1_vector, entity2_vector) / (
             np.linalg.norm(entity1_vector) * np.linalg.norm(entity2_vector)
         )
