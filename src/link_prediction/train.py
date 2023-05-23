@@ -3,14 +3,14 @@ import argparse
 import numpy
 import torch
 
-from .config import MODEL_PATH
-from .data import ALL_DATASET_NAMES
-from .data import Dataset
+from ..config import MODEL_PATH
+from ..data import ALL_DATASET_NAMES
+from ..data import Dataset
 
-from .link_prediction.evaluation import Evaluator
-from .link_prediction.optimization import MultiClassNLLOptimizer
-from .link_prediction.models import ComplEx
-from .link_prediction.models import (
+from .evaluation import Evaluator
+from .optimization import MultiClassNLLOptimizer
+from .models import ComplEx
+from .models import (
     OPTIMIZER_NAME,
     LEARNING_RATE,
     REGULARIZER_NAME,

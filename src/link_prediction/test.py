@@ -1,12 +1,12 @@
 import argparse
 import torch
 
-from .data import ALL_DATASET_NAMES
-from .data import Dataset
+from ..data import ALL_DATASET_NAMES
+from ..data import Dataset
 
-from .link_prediction.evaluation import Evaluator
-from .link_prediction.models import ComplEx
-from .link_prediction.models import DIMENSION, INIT_SCALE
+from .evaluation import Evaluator
+from .models import ComplEx
+from .models import DIMENSION, INIT_SCALE
 
 parser = argparse.ArgumentParser(description="Kelpie")
 
