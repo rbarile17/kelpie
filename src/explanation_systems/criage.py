@@ -1,9 +1,9 @@
 from typing import Tuple, Any
-from .data import Dataset
-from .prefilters import CriagePreFilter
-from .relevance_engines import CriageEngine
-from .link_prediction.models import Model
-from .explanation_builders import (
+from ..data import Dataset
+from ..prefilters import CriagePreFilter
+from ..relevance_engines import CriageEngine
+from ..link_prediction.models import Model
+from ..explanation_builders import (
     CriageNecessaryExplanationBuilder,
     CriageSufficientExplanationBuilder,
 )

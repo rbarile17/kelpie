@@ -7,9 +7,9 @@ import torch
 
 from . import ALL_DATASET_NAMES
 from .data import Dataset
-from .kelpie import Kelpie
-from .data_poisoning import DataPoisoning
-from .criage import Criage
+from .explanation_systems.kelpie import Kelpie
+from .explanation_systems.data_poisoning import DataPoisoning
+from .explanation_systems.criage import Criage
 from .prefilters import (
     TOPOLOGY_PREFILTER,
     TYPE_PREFILTER,
