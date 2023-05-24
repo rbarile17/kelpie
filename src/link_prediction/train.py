@@ -3,13 +3,13 @@ import argparse
 import numpy
 import torch
 
+from .. import ALL_DATASET_NAMES
 from ..config import MODEL_PATH
-from ..data import ALL_DATASET_NAMES
 from ..data import Dataset
 
 from .evaluation import Evaluator
-from .optimization import MultiClassNLLOptimizer
-from .models import ComplEx
+from .optimization import MultiClassNLLOptimizer, PairwiseRankingOptimizer
+from .models import ComplEx, TransE
 from .models import (
     OPTIMIZER_NAME,
     LEARNING_RATE,
@@ -21,6 +21,8 @@ from .models import (
     EPOCHS,
     DIMENSION,
     INIT_SCALE,
+    MARGIN,
+    NEGATIVE_TRIPLES_RATIO,
 )
 
 parser = argparse.ArgumentParser(description="Kelpie")
@@ -29,6 +31,12 @@ parser.add_argument(
     "--dataset",
     choices=ALL_DATASET_NAMES,
     help="Dataset in {}".format(ALL_DATASET_NAMES),
+)
+
+parser.add_argument(
+    "--model",
+    choices=["ConvE", "ComplEx", "TransE"],
+    help=f"Model in {['ConvE', 'ComplEx', 'TransE']}",
 )
 
 optimizers = ["Adagrad", "Adam", "SGD"]
@@ -73,6 +81,24 @@ parser.add_argument(
     help="Decay rate for second moment estimate in Adam",
 )
 
+parser.add_argument(
+    "--margin", type=int, default=5, help="Margin for pairwise ranking loss."
+)
+
+parser.add_argument(
+    "--negative_samples_ratio",
+    type=int,
+    default=3,
+    help="Number of negative samples for each positive sample.",
+)
+
+parser.add_argument(
+    "--regularizer_weight",
+    type=float,
+    default=0.0,
+    help="Weight for L2 regularization.",
+)
+
 parser.add_argument("--load", help="path to the model to load", required=False)
 
 args = parser.parse_args()
@@ -87,37 +113,50 @@ torch.backends.cudnn.deterministic = True
 if args.load is not None:
     model_path = args.load
 else:
-    model_path = os.path.join(MODEL_PATH, "_".join(["ComplEx", args.dataset]) + ".pt")
+    model_path = os.path.join(MODEL_PATH, "_".join([args.model, args.dataset]) + ".pt")
     if not os.path.isdir(MODEL_PATH):
         os.makedirs(MODEL_PATH)
 
 print("Loading %s dataset..." % args.dataset)
 dataset = Dataset(dataset=args.dataset)
 
-
-hyperparameters = {
-    DIMENSION: args.dimension,
-    INIT_SCALE: args.init_scale,
-    OPTIMIZER_NAME: args.optimizer,
-    BATCH_SIZE: args.batch_size,
-    EPOCHS: args.max_epochs,
-    LEARNING_RATE: args.learning_rate,
-    DECAY_1: args.decay1,
-    DECAY_2: args.decay2,
-    REGULARIZER_NAME: "N3",
-    REGULARIZER_WEIGHT: args.reg,
-}
-
 print("Initializing model...")
-model = ComplEx(
-    dataset=dataset, hyperparameters=hyperparameters, init_random=True
-)  # type: ComplEx
+if args.model == "ComplEx":
+    hyperparameters = {
+        DIMENSION: args.dimension,
+        INIT_SCALE: args.init_scale,
+        OPTIMIZER_NAME: args.optimizer,
+        BATCH_SIZE: args.batch_size,
+        EPOCHS: args.max_epochs,
+        LEARNING_RATE: args.learning_rate,
+        DECAY_1: args.decay1,
+        DECAY_2: args.decay2,
+        REGULARIZER_NAME: "N3",
+        REGULARIZER_WEIGHT: args.reg,
+    }
+
+    model = ComplEx(dataset=dataset, hyperparameters=hyperparameters, init_random=True)
+    optimizer = MultiClassNLLOptimizer(model=model, hyperparameters=hyperparameters)
+elif args.model == "TransE":
+    hyperparameters = {
+        DIMENSION: args.dimension,
+        MARGIN: args.margin,
+        NEGATIVE_TRIPLES_RATIO: args.negative_samples_ratio,
+        REGULARIZER_WEIGHT: args.regularizer_weight,
+        BATCH_SIZE: args.batch_size,
+        LEARNING_RATE: args.learning_rate,
+        EPOCHS: args.max_epochs,
+    }
+
+    model = TransE(dataset=dataset, hyperparameters=hyperparameters, init_random=True)
+    optimizer = PairwiseRankingOptimizer(model=model, hyperparameters=hyperparameters)
+
+
 model.to("cuda")
 if args.load is not None:
     model.load_state_dict(torch.load(model_path))
 
 print("Training model...")
-optimizer = MultiClassNLLOptimizer(model=model, hyperparameters=hyperparameters)
 
 optimizer.train(
     training_triples=dataset.training_triples,
