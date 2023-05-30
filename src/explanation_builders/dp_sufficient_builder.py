@@ -105,7 +105,6 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
                 triples=rule,
                 old_entity=self.perspective_entity,
                 new_entity=entity_to_convert,
-                as_numpy=False,
             )
             r_triple_to_convert = Dataset.replace_entity_in_triple(
                 self.triple_to_explain, self.perspective_entity, entity_to_convert
@@ -126,26 +125,9 @@ class DataPoisoningSufficientExplanationBuilder(SufficientExplanationBuilder):
 
             rule_2_individual_relevances[rule].append(individual_relevance)
 
-            outlines.append(
-                ";".join(self.dataset.labels_triple(self.triple_to_explain))
-                + ";"
-                + ";".join(self.dataset.labels_triple(r_triple_to_convert))
-                + ";"
-                + ";".join(self.dataset.labels_triple(triple_to_add))
-                + ";"
-                + str(original_target_entity_score)
-                + ";"
-                + str(original_target_entity_rank)
-                + ";"
-                + str(original_added_triple_score)
-                + ";"
-                + str(perturbed_added_triple_score)
-                + ";"
-                + str(individual_relevance)
-            )
-
         # add the rule global relevance to all the outlines that refer to this rule
-        global_relevance = self._average(rule_2_individual_relevances[rule])
+        global_relevance = sum(rule_2_individual_relevances[rule])
+        global_relevance /= len(rule_2_individual_relevances[rule])
 
         return global_relevance
 

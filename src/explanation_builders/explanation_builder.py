@@ -17,30 +17,20 @@ class SufficientExplanationBuilder:
         num_entities_to_convert: int,
         max_explanation_length: int,
     ):
-        """
-        SufficientRulesExtractor object constructor.
-
-        """
+        """SufficientExplanationBuilder object constructor."""
         self.model = model
         self.dataset = dataset
         self.triple_to_explain = triple_to_explain
+        head, _, tail = triple_to_explain
 
         self.perspective = perspective
-        self.perspective_entity = (
-            triple_to_explain[0] if perspective == "head" else triple_to_explain[2]
-        )
+        self.perspective_entity = head if perspective == "head" else tail
 
         self.num_entities_to_convert = num_entities_to_convert
         self.length_cap = max_explanation_length
 
     def build_explanations(self, triples_to_add: list, top_k: int = 10):
         pass
-
-    def _average(self, l: list):
-        result = 0.0
-        for item in l:
-            result += float(item)
-        return result / float(len(l))
 
 
 class NecessaryExplanationBuilder:
@@ -56,25 +46,16 @@ class NecessaryExplanationBuilder:
         perspective: str,
         max_explanation_length: int,
     ):
-        """
-        NecessaryExplanationBuilder object constructor.
-        """
+        """NecessaryExplanationBuilder object constructor."""
         self.model = model
         self.dataset = dataset
         self.triple_to_explain = triple_to_explain
+        head, _, tail = triple_to_explain
 
         self.perspective = perspective
-        self.perspective_entity = (
-            triple_to_explain[0] if perspective == "head" else triple_to_explain[2]
-        )
+        self.perspective_entity = head if perspective == "head" else tail
 
         self.length_cap = max_explanation_length
 
-    def build_explanations(self, triples_to_add: list, top_k: int = 10):
+    def build_explanations(self, triples_to_remove: list, top_k: int = 10):
         pass
-
-    def _average(self, l: list):
-        result = 0.0
-        for item in l:
-            result += float(item)
-        return result / float(len(l))

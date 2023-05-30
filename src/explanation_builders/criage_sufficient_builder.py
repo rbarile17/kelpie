@@ -107,12 +107,8 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
 
         for j, entity_to_convert in enumerate(self.entities_to_convert):
             print(
-                "\t\tConverting entity "
-                + str(j)
-                + " on "
-                + str(self.num_entities_to_convert)
-                + ": "
-                + self.dataset.id_to_entity[entity_to_convert]
+                f"\t\tConverting entity {j + 1} on {self.num_entities_to_convert}: " \
+                f"{self.dataset.id_to_entity[entity_to_convert]}"
             )
 
             if perspective == "head":
@@ -147,17 +143,8 @@ class CriageSufficientExplanationBuilder(SufficientExplanationBuilder):
 
             rule_2_individual_relevances[rule].append(individual_relevance)
 
-            outlines.append(
-                ";".join(self.dataset.labels_triple(self.triple_to_explain))
-                + ";"
-                + ";".join(self.dataset.labels_triple(r_triple_to_convert))
-                + ";"
-                + ";".join(self.dataset.labels_triple(triple_to_add))
-                + ";"
-                + str(individual_relevance)
-            )
-
         # add the rule global relevance to all the outlines that refer to this rule
-        global_relevance = self._average(rule_2_individual_relevances[rule])
+        global_relevance = sum(rule_2_individual_relevances[rule])
+        global_relevance /= len(rule_2_individual_relevances[rule])
 
         return global_relevance
