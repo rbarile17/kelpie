@@ -124,10 +124,10 @@ class Kelpie:
             max_explanation_length=self.max_explanation_length,
         )
 
-        explanations_with_relevance = explanation_builder.build_explanations(
+        rule_to_relevance = explanation_builder.build_explanations(
             triples_to_add=most_promising_triples
         )
-        return explanations_with_relevance, explanation_builder.entities_to_convert
+        return rule_to_relevance, explanation_builder.entities_to_convert
 
     def explain_necessary(
         self,
@@ -172,7 +172,7 @@ class Kelpie:
             max_explanation_length=self.max_explanation_length,
         )
 
-        explanations_with_relevance = explanation_builder.build_explanations(
+        rule_to_relevance = explanation_builder.build_explanations(
             triples_to_remove=most_promising_triples
         )
-        return explanations_with_relevance
+        return rule_to_relevance

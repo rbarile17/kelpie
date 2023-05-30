@@ -201,25 +201,17 @@ def main(args):
 
     start_time = time.time()
 
-    if args.baseline is None:
-        kelpie = Kelpie(
-            model=model,
-            dataset=dataset,
-            hyperparameters=hyperparameters,
-            prefilter_type=prefilter,
-            relevance_threshold=relevance_threshold,
-        )
-    elif args.baseline == "data_poisoning":
-        kelpie = DataPoisoning(
+    if args.baseline == "data_poisoning":
+        pipeline = DataPoisoning(
             model=model,
             dataset=dataset,
             hyperparameters=hyperparameters,
             prefilter_type=prefilter,
         )
     elif args.baseline == "criage":
-        kelpie = Criage(model=model, dataset=dataset, hyperparameters=hyperparameters)
+        pipeline = Criage(model=model, dataset=dataset, hyperparameters=hyperparameters)
     elif args.baseline == "k1":
-        kelpie = Kelpie(
+        pipeline = Kelpie(
             model=model,
             dataset=dataset,
             hyperparameters=hyperparameters,
@@ -228,7 +220,7 @@ def main(args):
             max_explanation_length=1,
         )
     else:
-        kelpie = Kelpie(
+        pipeline = Kelpie(
             model=model,
             dataset=dataset,
             hyperparameters=hyperparameters,
@@ -249,7 +241,7 @@ def main(args):
             (
                 rule_to_relevance,
                 entities_to_convert,
-            ) = kelpie.explain_sufficient(
+            ) = pipeline.explain_sufficient(
                 triple_to_explain=triple,
                 perspective="head",
                 num_promising_triples=args.prefilter_threshold,
@@ -262,10 +254,7 @@ def main(args):
             entities_to_convert = [dataset.id_to_entity[x] for x in entities_to_convert]
 
             rule_to_relevance = [
-                (
-                    [dataset.labels_triple(rule_triple) for rule_triple in rule],
-                    relevance,
-                )
+                (dataset.labels_triples(rule), relevance)
                 for rule, relevance in rule_to_relevance
             ]
 
@@ -277,16 +266,13 @@ def main(args):
                 }
             )
         elif args.mode == "necessary":
-            rule_to_relevance = kelpie.explain_necessary(
+            rule_to_relevance = pipeline.explain_necessary(
                 triple_to_explain=triple,
                 perspective="head",
                 num_promising_triples=args.prefilter_threshold,
             )
             rule_to_relevance = [
-                (
-                    [dataset.labels_triple(rule_triple) for rule_triple in rule],
-                    relevance,
-                )
+                (dataset.labels_triples(rule), relevance)
                 for rule, relevance in rule_to_relevance
             ]
             explanations.append(
