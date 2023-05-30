@@ -129,8 +129,8 @@ class Dataset:
         return [self.ids_triple(labels_triple) for labels_triple in labels_triples]
 
     def printable_triple(self, triple):
-        h, r, t = triple
-        return f"<{self.id_to_entity[h]}, {self.id_to_relation[r]}, {self.id_to_entity[t]}>"
+        h, r, t = self.labels_triple(triple)
+        return f"<{h}, {r}, {t}>"
 
     def add_training_triple(self, triple):
         head, relation, tail = triple
@@ -229,20 +229,16 @@ class Dataset:
         return output
 
     @staticmethod
-    def replace_entity_in_triple(
-        triple, old_entity: int, new_entity: int, as_numpy=True
-    ):
+    def replace_entity_in_triple(triple, old_entity: int, new_entity: int):
         head, relation, tail = triple
         if head == old_entity:
             head = new_entity
         if tail == old_entity:
             tail = new_entity
-        return np.array([head, relation, tail]) if as_numpy else (head, relation, tail)
+        return (head, relation, tail)
 
     @staticmethod
-    def replace_entity_in_triples(
-        triples, old_entity: int, new_entity: int, as_numpy=True
-    ):
+    def replace_entity_in_triples(triples, old_entity: int, new_entity: int):
         results = []
         for head, relation, tail in triples:
             if head == old_entity:
@@ -251,7 +247,7 @@ class Dataset:
                 tail = new_entity
             results.append((head, relation, tail))
 
-        return np.array(results) if as_numpy else results
+        return results
 
     def printable_nple(self, nple: list):
-        return " + ".join([self.printable_triple(sample) for sample in nple])
+        return " +\n\t\t".join([self.printable_triple(sample) for sample in nple])
