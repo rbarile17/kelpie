@@ -283,22 +283,20 @@ class ConvE(Model):
         inverse_triples = self.dataset.invert_triples(direct_triples)
 
         # obtain scores, ranks and predictions both for direct and inverse triples
-        inverse_scores, head_ranks, head_predictions = self.predict_tails(
+        inverse_scores, head_ranks, head_preds = self.predict_tails(
             inverse_triples
         )
-        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_triples)
+        direct_scores, tail_ranks, tail_preds = self.predict_tails(direct_triples)
 
         for i in range(direct_triples.shape[0]):
-            # add to the scores list a couple containing the scores of the direct and of the inverse triple
-            scores += [(direct_scores[i], inverse_scores[i])]
+            scores.append({"tail": direct_scores[i], "head": inverse_scores[i]})
+            ranks.append({"tail": int(tail_ranks[i]), "head": int(head_ranks[i])})
+            predictions.append({"tail": tail_preds[i], "head": head_preds[i]})
 
-            # add to the ranks list a couple containing the ranks of the head and of the tail
-            ranks.append((int(head_ranks[i]), int(tail_ranks[i])))
-
-            # add to the prediction list a couple containing the lists of predictions
-            predictions.append((head_predictions[i], tail_predictions[i]))
-
-        return scores, ranks, predictions
+        return [
+            {"score": score, "rank": rank, "prediction": prediction}
+            for score, rank, prediction in zip(scores, ranks, predictions)
+        ]
 
     def predict_tails(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """

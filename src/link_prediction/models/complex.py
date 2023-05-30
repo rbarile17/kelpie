@@ -133,22 +133,6 @@ class ComplEx(Model):
             tail_embeddings[:, self.real_dimension :],
         )
 
-        # Bilinear product lhs * rel * rhs in complex scenario:
-        #   lhs => lhs[0] + i*lhs[1]
-        #   rel => rel[0] + i*rel[1]
-        #   rhs => rhs[0] - i*rhs[1] (complex conjugate of the tail: negative sign to its imaginary part)
-        #
-        #   ( lhs[0] + i*lhs[1] )    *    ( rel[0] + i*rel[1] )    *    ( rhs[0] - i*rhs[1] )
-        #   ( lhs[0]*rel[0] + i*(lhs[0]*rel[1]) + i*(lhs[1]*rel[0]) + i*i*(lhs[1]*rel[1] )    *    ( rhs[0] - i*rhs[1] )
-
-        #   ( lhs[0]*rel[0] - lhs[1]*rel[1] + i(lhs[0]*rel[1] + lhs[1]*rel[0]) )    *    ( rhs[0] - i*rhs[1] )
-        #
-        #   (lhs[0]*rel[0] - lhs[1]*rel[1]) * rhs[0]  + i*(...)*rhs[0] - i*(...)*rhs[1] - i*i*(lhs[0]*rel[1] + lhs[1]*rel[0])*rhs[1]
-        #   (lhs[0]*rel[0] - lhs[1]*rel[1]) * rhs[0] + (lhs[0]*rel[1] + lhs[1]*rel[0]) * rhs[1] + i*(...)
-        #
-        # => the real part of the result is:
-        #    (lhs[0] * rel[0] - lhs[1] * rel[1]) * rhs[0] +
-        #    (lhs[0] * rel[1] + lhs[1] * rel[0]) * rhs[1]
         return torch.sum(
             (lhs[0] * rel[0] - lhs[1] * rel[1]) * rhs[0]
             + (lhs[0] * rel[1] + lhs[1] * rel[0]) * rhs[1],
@@ -309,22 +293,18 @@ class ComplEx(Model):
         inverse_triples = self.dataset.invert_triples(direct_triples)
 
         # obtain scores, ranks and predictions both for direct and inverse triples
-        direct_scores, tail_ranks, tail_predictions = self.predict_tails(direct_triples)
-        inverse_scores, head_ranks, head_predictions = self.predict_tails(
-            inverse_triples
-        )
+        direct_scores, tail_ranks, tail_preds = self.predict_tails(direct_triples)
+        inverse_scores, head_ranks, head_preds = self.predict_tails(inverse_triples)
 
         for i in range(direct_triples.shape[0]):
-            # add to the scores list a couple containing the scores of the direct and of the inverse triple
-            scores.append((direct_scores[i], inverse_scores[i]))
+            scores.append({"tail": direct_scores[i], "head": inverse_scores[i]})
+            ranks.append({"tail": int(tail_ranks[i]), "head": int(head_ranks[i])})
+            predictions.append({"tail": tail_preds[i], "head": head_preds[i]})
 
-            # add to the ranks list a couple containing the ranks of the head and of the tail
-            ranks.append((int(head_ranks[i]), int(tail_ranks[i])))
-
-            # add to the prediction list a couple containing the lists of predictions
-            predictions.append((head_predictions[i], tail_predictions[i]))
-
-        return scores, ranks, predictions
+        return [
+            {"score": score, "rank": rank, "prediction": prediction}
+            for score, rank, prediction in zip(scores, ranks, predictions)
+        ]
 
     def predict_tails(self, triples: np.array) -> Tuple[Any, Any, Any]:
         """
@@ -547,7 +527,5 @@ class KelpieComplEx(KelpieModel, ComplEx):
 
         assert triple[1] < self.dataset.num_relations
 
-        scores, ranks, predictions = self.predict_triples(
-            np.array([triple]), original_mode
-        )
-        return scores[0], ranks[0], predictions[0]
+        [result] = self.predict_triples(np.array([triple]), original_mode)
+        return result["score"], result["rank"], result["prediction"]

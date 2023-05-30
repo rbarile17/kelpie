@@ -18,33 +18,30 @@ class Evaluator:
         # if the model is Transe, it uses too much memory to allow computation of all triples altogether
         batch_size = 500
         if len(triples) > batch_size and isinstance(self.model, TransE):
-            scores, ranks, predictions = [], [], []
             batch_start = 0
+            results = []
             while batch_start < len(triples):
                 cur_batch = triples[
                     batch_start : min(len(triples), batch_start + batch_size)
                 ]
-                (
-                    cur_batch_scores,
-                    cur_batch_ranks,
-                    cur_batch_predictions,
-                ) = self.model.predict_triples(cur_batch)
-                scores += cur_batch_scores
-                ranks += cur_batch_ranks
-                predictions += cur_batch_predictions
+                results += self.model.predict_triples(cur_batch)
 
                 batch_start += batch_size
         else:
             # run prediction on all the triples
-            scores, ranks, predictions = self.model.predict_triples(triples)
+            results = self.model.predict_triples(triples)
 
         all_ranks = []
         for i in range(triples.shape[0]):
-            all_ranks.append(ranks[i][0])
-            all_ranks.append(ranks[i][1])
+            all_ranks.append(results[i]["rank"]["tail"])
+            all_ranks.append(results[i]["rank"]["head"])
 
         if write_output:
-            self._write_output(triples, ranks, predictions)
+            self._write_output(
+                triples,
+                [result["rank"] for result in results],
+                [result["prediction"] for result in results],
+            )
 
         return (
             self.mrr(all_ranks),
@@ -59,8 +56,11 @@ class Evaluator:
         for i in range(triples.shape[0]):
             head_id, rel_id, tail_id = triples[i]
 
-            head_rank, tail_rank = ranks[i]
-            head_prediction_ids, tail_prediction_ids = predictions[i]
+            head_rank, tail_rank = ranks[i]["head"], ranks[i]["tail"]
+            head_prediction_ids, tail_prediction_ids = (
+                predictions[i]["head"],
+                predictions[i]["tail"],
+            )
 
             head_prediction_ids = head_prediction_ids[:head_rank]
             tail_prediction_ids = tail_prediction_ids[:tail_rank]

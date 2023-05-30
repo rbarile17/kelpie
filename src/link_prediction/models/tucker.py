@@ -435,6 +435,10 @@ class KelpieTuckER(KelpieModel, TuckER):
         self.batch_norm_1.eval()
         self.batch_norm_2.eval()
 
+    @property
+    def dimension(self):
+        return self.entity_dimension
+
     # Override
     def predict_triples(self, triples: np.array, original_mode: bool = False):
         """

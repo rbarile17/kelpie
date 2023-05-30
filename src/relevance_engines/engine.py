@@ -142,8 +142,8 @@ class ExplanationEngine:
 
                 batch_size = 500
 
-                if isinstance(model, TransE) and dataset.name == "YAGO3-10":
-                    batch_size = 100
+                # if isinstance(model, TransE) and dataset.name == "YAGO3-10":
+                #     batch_size = 100
                 batch_scores_array = []
                 batch_start = 0
                 while batch_start < len(step_1_triples):

@@ -158,8 +158,8 @@ class Model(nn.Module):
 
         assert triple[1] < self.dataset.num_relations
 
-        scores, ranks, predictions = self.predict_triples(numpy.array([triple]))
-        return scores[0], ranks[0], predictions[0]
+        [result] = self.predict_triples(numpy.array([triple]))
+        return result["score"], result["rank"], result["prediction"]
 
     def kelpie_model_class(self):
         """
