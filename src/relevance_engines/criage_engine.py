@@ -2,6 +2,7 @@ import random
 import numpy
 import torch
 
+from collections import defaultdict
 from typing import Tuple, Any
 
 from .engine import ExplanationEngine
@@ -25,12 +26,9 @@ class CriageEngine(ExplanationEngine):
 
         self.entity_dimension = self.model.dimension
 
-        # this dictionary maps each entity to the training triples that feature it as a tail
-        self.tail_entity_to_training_triples = {}
-        for h, r, t in self.dataset.training_triples:
-            if t not in self.tail_entity_to_training_triples:
-                self.tail_entity_to_training_triples[t] = []
-            self.tail_entity_to_training_triples[t].append((h, r, t))
+        self.tail_to_training_triples = defaultdict(list)
+        for h, r, t in dataset.training_triples:
+            self.tail_to_training_triples[t].append((h, r, t))
 
         # caches
         self.hr_2_z = {}
@@ -52,25 +50,20 @@ class CriageEngine(ExplanationEngine):
         triple_to_remove = triples_to_remove[0]
         (head_to_explain, relation_to_explain, tail_to_explain) = triple_to_explain
 
-        # this means that the tail of triple_to_remove is the head of the triple to explain
+        # this means that the tail of triple_to_remove is the tail of the triple to explain
         if perspective == "tail":
-            assert tail_to_explain in self.tail_entity_to_training_triples
+            assert tail_to_explain in self.tail_to_training_triples
 
             z_head_relation = self.get_z_for(triple_to_explain)
-            # z_head_relation = self.get_z_for(triple_to_explain).detach().cpu().numpy()
-
-            training_triples_with_tail_as_tail = []
-            if tail_to_explain in self.tail_entity_to_training_triples:
-                training_triples_with_tail_as_tail = self.tail_entity_to_training_triples[
-                    tail_to_explain
-                ]
 
             hessian_matrix = self.get_hessian_for(
-                entity=tail_to_explain, training_triples=training_triples_with_tail_as_tail
+                entity=tail_to_explain,
+                training_triples=self.tail_to_training_triples.get(
+                    tail_to_explain, []
+                ),
             )
 
             z_cur_head_relation = self.get_z_for(triple_to_remove)
-            # z_cur_head_relation = self.get_z_for(triple_to_remove).detach().cpu().numpy()
 
             score_variation, _ = self._estimate_score_variation_in_removal(
                 z_triple_to_explain=z_head_relation,
@@ -81,20 +74,17 @@ class CriageEngine(ExplanationEngine):
 
         # this means that the tail of triple_to_remove is the head of the triple to explain
         elif perspective == "head":
-            assert head_to_explain in self.tail_entity_to_training_triples
+            assert head_to_explain in self.tail_to_training_triples
 
             z_tail_relation = self.get_z_for(
                 (tail_to_explain, relation_to_explain, head_to_explain)
             )
 
-            training_triples_with_head_as_tail = []
-            if head_to_explain in self.tail_entity_to_training_triples:
-                training_triples_with_head_as_tail = self.tail_entity_to_training_triples[
-                    head_to_explain
-                ]
-
             hessian_matrix = self.get_hessian_for(
-                entity=head_to_explain, training_triples=training_triples_with_head_as_tail
+                entity=head_to_explain,
+                training_triples=self.tail_to_training_triples.get(
+                    head_to_explain, []
+                ),
             )
 
             z_cur_head_relation = self.get_z_for(triple_to_remove)
@@ -133,13 +123,14 @@ class CriageEngine(ExplanationEngine):
             z_head_relation = self.get_z_for(triple_to_convert)
 
             training_triples_with_tail_as_tail = []
-            if tail_to_convert in self.tail_entity_to_training_triples:
-                training_triples_with_tail_as_tail = self.tail_entity_to_training_triples[
-                    tail_to_convert
-                ]
+            if tail_to_convert in self.tail_to_training_triples:
+                training_triples_with_tail_as_tail = (
+                    self.tail_to_training_triples[tail_to_convert]
+                )
 
             hessian_matrix = self.get_hessian_for(
-                entity=tail_to_convert, training_triples=training_triples_with_tail_as_tail
+                entity=tail_to_convert,
+                training_triples=training_triples_with_tail_as_tail,
             )
 
             z_cur_head_relation = self.get_z_for(triple_to_add)
@@ -161,13 +152,14 @@ class CriageEngine(ExplanationEngine):
             )
 
             training_triples_with_head_as_tail = []
-            if head_to_convert in self.tail_entity_to_training_triples:
-                training_triples_with_head_as_tail = self.tail_entity_to_training_triples[
-                    head_to_convert
-                ]
+            if head_to_convert in self.tail_to_training_triples:
+                training_triples_with_head_as_tail = (
+                    self.tail_to_training_triples[head_to_convert]
+                )
 
             hessian_matrix = self.get_hessian_for(
-                entity=head_to_convert, training_triples=training_triples_with_head_as_tail
+                entity=head_to_convert,
+                training_triples=training_triples_with_head_as_tail,
             )
 
             z_cur_head_relation = self.get_z_for(triple_to_add)
@@ -184,7 +176,8 @@ class CriageEngine(ExplanationEngine):
         return score_variation
 
     def get_z_for(self, triple):
-        hr = (triple[0], triple[1])
+        head, relation, _ = triple
+        hr = (head, relation)
         if hr not in self.hr_2_z:
             self.hr_2_z[hr] = self.model.criage_first_step(numpy.array([triple]))
         return self.hr_2_z[hr]
@@ -208,8 +201,6 @@ class CriageEngine(ExplanationEngine):
         :return: the computed Hessian matrix, that is, an entity_dimension x entity_dimension matrix
         """
 
-        # scores = self.model.score(numpy.array(triples_featuring_entity_as_tail))
-
         all_entity_embeddings = self.model.entity_embeddings
         all_relation_embeddings = self.model.relation_embeddings
 
@@ -226,20 +217,15 @@ class CriageEngine(ExplanationEngine):
                 all_relation_embeddings[relation_id].detach().cpu().numpy()
             )
 
-            # x = self.model.criage_first_step(numpy.array([triple]))
             x = numpy.multiply(
                 numpy.reshape(head_embedding, (1, -1)),
                 numpy.reshape(relation_embedding, (1, -1)),
             )
 
-            # x_2 = self.model.criage_last_step(x, all_entity_embeddings[[entity]])
             x_2 = numpy.dot(entity_embedding, numpy.transpose(x))
 
-            # x = x.detach().cpu().numpy()
-            # x_2 = x_2.detach().cpu().numpy()
-            sig_tri = self.sigmoid(x_2)  # wtf?
-            sig = sig_tri * (1 - sig_tri)  # sigmoid derivative
-
+            sig_tri = self.sigmoid(x_2)
+            sig = sig_tri * (1 - sig_tri)
             hessian_matrix += sig * numpy.dot(numpy.transpose(x), x)
         return hessian_matrix
 
@@ -298,7 +284,6 @@ class CriageEngine(ExplanationEngine):
         except Exception:
             print(self.dataset.entity_id_2_name[entity_id])
 
-    # @Override
     def extract_entities_for(
         self,
         model: Model,
@@ -316,7 +301,7 @@ class CriageEngine(ExplanationEngine):
         # disable backprop for all the following operations: hopefully this should make them faster
         with torch.no_grad():
             head_to_explain, relation_to_explain, tail_to_explain = triple
-            entity_to_explain, target_entity = (
+            entity_to_explain, _ = (
                 (relation_to_explain, tail_to_explain)
                 if perspective == "head"
                 else (tail_to_explain, head_to_explain)
@@ -345,19 +330,19 @@ class CriageEngine(ExplanationEngine):
 
                     # THIS IS IMPORTANT IN CRIAGE
                     # if the entity does not appear as tail in training even once, ignore it
-                    if cur_entity not in self.tail_entity_to_training_triples:
+                    if cur_entity not in self.tail_to_training_triples:
                         continue
 
                     # if any facts <cur_entity, relation, *> are in the dataset:
                     if (cur_entity, relation_to_explain) in dataset.to_filter:
-                        ## if the relation is *_TO_ONE, ignore any entities for which in train/valid/test,
+                        # if the relation is *_TO_ONE, ignore any entities for which in train/valid/test,
                         if dataset.relation_to_type[relation_to_explain] in [
                             ONE_TO_ONE,
                             MANY_TO_ONE,
                         ]:
                             continue
 
-                        ## if <cur_entity, relation, tail> is in the dataset, ignore this entity
+                        # if <cur_entity, relation, tail> is in the dataset, ignore this entity
                         if (
                             tail_to_explain
                             in dataset.to_filter[(cur_entity, relation_to_explain)]
@@ -389,9 +374,6 @@ class CriageEngine(ExplanationEngine):
                     batch_scores_array.append(cur_batch_all_scores)
                     batch_start += batch_size
                 triples_all_scores = numpy.vstack(batch_scores_array)
-
-                # else:
-                #    triples_all_scores = model.all_scores(triples=numpy.array(step_1_triples)).detach().cpu().numpy()
 
                 for i in range(len(step_1_candidate_entities)):
                     cur_candidate_entity = step_1_candidate_entities[i]

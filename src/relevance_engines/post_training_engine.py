@@ -1,6 +1,6 @@
 import math
 import time
-import numpy
+import numpy as np
 import torch
 
 from typing import Tuple, Any
@@ -23,13 +23,12 @@ class PostTrainingEngine(ExplanationEngine):
         return 1 / (1 + math.exp(-x))
 
     def __init__(self, model: Model, dataset: Dataset, hyperparameters: dict):
-        """
-        PostTrainingEngine constructor.
+        """PostTrainingEngine constructor.
 
         :param model: the trained Model to explain the behaviour of. This can NOT be a KelpieModel.
         :param dataset: the Dataset used to train the model
         :param hyperparameters: dict containing all the hyperparameters necessary for running the post-training
-                                (for both the model and the optimizer)
+            (for both the model and the optimizer)
         """
 
         ExplanationEngine.__init__(
@@ -46,25 +45,11 @@ class PostTrainingEngine(ExplanationEngine):
             self.kelpie_optimizer_class = KelpieMultiClassNLLOptimizer
 
         if isinstance(model, KelpieModel):
-            raise Exception(
-                "The model passed to the PostTrainingEngine is already a post-trainable KelpieModel."
-            )
+            raise Exception("Already a post-trainable KelpieModel.")
 
-        # these data structures are used store permanently, for any fact:
-        #   - the score
-        #   - the score obtained by the best scoring tail (in "head" perspective) or head (in "tail" perspective)
-        #   - the rank obtained by the target tail (in "head" perspective) or head (in "tail" perspective) score)
-        self._original_model_results = (
-            {}
-        )  # map original triples to scores and ranks from the original model
-        self._base_pt_model_results = (
-            {}
-        )  # map original triples to scores and ranks from the base post-trained model
-
-        # The kelpie_cache is a simple LRU cache that allows reuse of KelpieDatasets and of base post-training results
-        # without need to re-build them from scratch every time.
-        self._kelpie_dataset_cache_size = 20
-        self._kelpie_dataset_cache = OrderedDict()
+        self.base_pt_model_results = {}
+        self.kelpie_dataset_cache_size = 20
+        self.kelpie_dataset_cache = OrderedDict()
 
     def addition_relevance(
         self,
@@ -72,8 +57,7 @@ class PostTrainingEngine(ExplanationEngine):
         perspective: str,
         triples_to_add: list,
     ):
-        """
-        Given a "triple to convert" (that is, a triple that the model currently does not predict as true,
+        """Given a "triple to convert" (that is, a triple that the model currently does not predict as true,
         and that we want to be predicted as true);
         given the perspective from which to analyze it;
         and given and a list of triples containing the entity to convert and that were not seen in training;
@@ -90,91 +74,52 @@ class PostTrainingEngine(ExplanationEngine):
         """
         start_time = time.time()
 
-        head_id, relation_id, tail_id = triple_to_convert
-        original_entity_to_convert = head_id if perspective == "head" else tail_id
+        head, _, tail = triple_to_convert
+        original_entity = head if perspective == "head" else tail
 
-        # check how the original model performs on the original triple to convert
-        (
-            original_target_entity_score,
-            original_best_entity_score,
-            original_target_entity_rank,
-        ) = self.original_results_for(original_triple_to_predict=triple_to_convert)
-
-        # get from the cache a Kelpie Dataset focused on the original id of the entity to explain,
-        # (or create it from scratch if it is not in cache)
-        kelpie_dataset = self._get_kelpie_dataset_for(
-            original_entity_id=original_entity_to_convert
-        )
+        kelpie_dataset = self._get_kelpie_dataset(original_entity=original_entity)
 
         kelpie_model_class = self.model.kelpie_model_class()
+        init_tensor = torch.rand(1, self.model.dimension)
 
-        kelpie_init_tensor_size = (
-            self.model.dimension
-            if not isinstance(self.model, TuckER)
-            else self.model.entity_dimension
+        # run base post-training on homologous mimic of the perspective entity
+        # and check how the model performs on the triple to explain
+        kelpie_model = kelpie_model_class(
+            model=self.model, dataset=kelpie_dataset, init_tensor=init_tensor
         )
-        kelpie_init_tensor = torch.rand(1, kelpie_init_tensor_size)
-
-        # run base post-training to obtain a "clone" of the perspective entity and see how it performs in the triple to convert
-        base_kelpie_model = kelpie_model_class(
-            model=self.model, dataset=kelpie_dataset, init_tensor=kelpie_init_tensor
-        )
-        (
-            base_pt_target_entity_score,
-            base_pt_best_entity_score,
-            base_pt_target_entity_rank,
-        ) = self.base_post_training_results_for(
-            kelpie_model=base_kelpie_model,
-            kelpie_dataset=kelpie_dataset,
-            original_triple_to_predict=triple_to_convert,
+        base_pt_results = self.base_post_training_results_for(
+            model=kelpie_model,
+            dataset=kelpie_dataset,
+            triple_to_predict=triple_to_convert,
         )
 
-        # run actual post-training by adding the passed triples to the perspective entity and see how it performs in the triple to convert
-        pt_kelpie_model = kelpie_model_class(
-            model=self.model, dataset=kelpie_dataset, init_tensor=kelpie_init_tensor
+        # run actual post-training on non homologous mimic of the perspective entity
+        # and see how the model performs on the triple to explain
+        pt_model = kelpie_model_class(
+            model=self.model, dataset=kelpie_dataset, init_tensor=init_tensor
         )
-        (
-            pt_target_entity_score,
-            pt_best_entity_score,
-            pt_target_entity_rank,
-        ) = self.addition_post_training_results_for(
-            kelpie_model=pt_kelpie_model,
-            kelpie_dataset=kelpie_dataset,
-            original_triple_to_predict=triple_to_convert,
-            original_triples_to_add=triples_to_add,
+        pt_results = self.addition_post_training_results_for(
+            model=pt_model,
+            dataset=kelpie_dataset,
+            triple_to_predict=triple_to_convert,
+            triples_to_add=triples_to_add,
         )
 
-        # we want to give higher priority to the facts that, when added, make the score the better (= smaller).
-        rank_improvement = base_pt_target_entity_rank - pt_target_entity_rank
-
-        # if the model is a minimizer the smaller pt_target_entity_score is than base_pt_target_entity_score, the more relevant the added fact;
-        # if the model is a maximizer, the greater pt_target_entity_score is than base_pt_target_entity_score, the more relevant the added fact
+        rank_improvement = base_pt_results["target_rank"] - pt_results["target_rank"]
         score_improvement = (
-            base_pt_target_entity_score - pt_target_entity_score
+            base_pt_results["target_score"] - pt_results["target_score"]
             if self.model.is_minimizer()
-            else pt_target_entity_score - base_pt_target_entity_score
+            else pt_results["target_score"] - base_pt_results["target_score"]
         )
 
-        relevance = float(rank_improvement + self.sigmoid(score_improvement)) / float(
-            base_pt_target_entity_rank
-        )
+        relevance = float(rank_improvement + self.sigmoid(score_improvement))
+        relevance /= float(base_pt_results["target_rank"])
 
-        print("\t\tObtained individual relevance: " + str(relevance) + "\n")
+        print(f"\t\tObtained individual relevance: {relevance:.3f}")
 
-        end_time = time.time()
-        execution_time = end_time - start_time
         return (
             relevance,
-            original_best_entity_score,
-            original_target_entity_score,
-            original_target_entity_rank,
-            base_pt_best_entity_score,
-            base_pt_target_entity_score,
-            base_pt_target_entity_rank,
-            pt_best_entity_score,
-            pt_target_entity_score,
-            pt_target_entity_rank,
-            execution_time,
+            time.time() - start_time,
         )
 
     def removal_relevance(
@@ -183,8 +128,7 @@ class PostTrainingEngine(ExplanationEngine):
         perspective: str,
         triples_to_remove: list,
     ):
-        """
-        Given a "triple to explain" (that is, a triple that the model currently predicts as true,
+        """Given a "triple to explain" (that is, a triple that the model currently predicts as true,
         and that we want to be predicted as false);
         given the perspective from which to analyze it;
         and given and a list of training triples containing the entity to convert;
@@ -200,198 +144,110 @@ class PostTrainingEngine(ExplanationEngine):
         :return:
         """
         start_time = time.time()
-        head_id, relation_id, tail_id = triple_to_explain
-        original_entity_to_convert = head_id if perspective == "head" else tail_id
+        head, _, tail = triple_to_explain
+        entity_to_convert = head if perspective == "head" else tail
 
-        # check how the original model performs on the original triple to convert
-        (
-            original_target_entity_score,
-            original_best_entity_score,
-            original_target_entity_rank,
-        ) = self.original_results_for(original_triple_to_predict=triple_to_explain)
-
-        # get from the cache a Kelpie Dataset focused on the original id of the entity to explain,
-        # (or create it from scratch if it is not in cache)
-        kelpie_dataset = self._get_kelpie_dataset_for(
-            original_entity_id=original_entity_to_convert
-        )
+        kelpie_dataset = self._get_kelpie_dataset(original_entity=entity_to_convert)
 
         kelpie_model_class = self.model.kelpie_model_class()
+        init_tensor = torch.rand(1, self.model.dimension)
 
-        kelpie_init_tensor_size = (
-            self.model.dimension
-            if not isinstance(self.model, TuckER)
-            else self.model.entity_dimension
+        # run base post-training on homologous mimic of the perspective entity
+        # and check how the model performs on the triple to explain
+        base_model = kelpie_model_class(
+            model=self.model,
+            dataset=kelpie_dataset,
+            init_tensor=init_tensor,
         )
-        kelpie_init_tensor = torch.rand(1, kelpie_init_tensor_size)
-
-        # run base post-training to obtain a "clone" of the perspective entity and see how it performs in the triple to convert
-        base_kelpie_model = kelpie_model_class(
-            model=self.model, dataset=kelpie_dataset, init_tensor=kelpie_init_tensor
-        )
-        (
-            base_pt_target_entity_score,
-            base_pt_best_entity_score,
-            base_pt_target_entity_rank,
-        ) = self.base_post_training_results_for(
-            kelpie_model=base_kelpie_model,
-            kelpie_dataset=kelpie_dataset,
-            original_triple_to_predict=triple_to_explain,
+        base_pt_results = self.base_post_training_results_for(
+            model=base_model,
+            dataset=kelpie_dataset,
+            triple_to_predict=triple_to_explain,
         )
 
         # run actual post-training by adding the passed triples to the perspective entity and see how it performs in the triple to convert
         pt_kelpie_model = kelpie_model_class(
-            model=self.model, dataset=kelpie_dataset, init_tensor=kelpie_init_tensor
+            model=self.model, dataset=kelpie_dataset, init_tensor=init_tensor
+        )
+        pt_results = self.removal_post_training_results_for(
+            model=pt_kelpie_model,
+            dataset=kelpie_dataset,
+            triple_to_predict=triple_to_explain,
+            triples_to_remove=triples_to_remove,
         )
 
-        # run actual post-training by adding the passed triples to the perspective entity and see how it performs in the triple to convert
-        (
-            pt_target_entity_score,
-            pt_best_entity_score,
-            pt_target_entity_rank,
-        ) = self.removal_post_training_results_for(
-            kelpie_model=pt_kelpie_model,
-            kelpie_dataset=kelpie_dataset,
-            original_triple_to_predict=triple_to_explain,
-            original_triples_to_remove=triples_to_remove,
-        )
-
-        # we want to give higher priority to the facts that, when added, make the score worse (= higher).
-        rank_worsening = pt_target_entity_rank - base_pt_target_entity_rank
-
-        # if the model is a minimizer the smaller base_pt_target_entity_score is than pt_target_entity_score, the more relevant the removed facts;
-        # if the model is a maximizer, the greater base_pt_target_entity_score is than pt_target_entity_score, the more relevant the removed facts
+        rank_worsening = pt_results["target_rank"] - base_pt_results["target_rank"]
         score_worsening = (
-            pt_target_entity_score - base_pt_target_entity_score
+            pt_results["target_score"] - base_pt_results["target_score"]
             if self.model.is_minimizer()
-            else base_pt_target_entity_score - pt_target_entity_score
+            else base_pt_results["target_score"] - pt_results["target_score"]
         )
 
-        # note: the formulation is very different from the addition one
         relevance = float(rank_worsening + self.sigmoid(score_worsening))
 
-        end_time = time.time()
-        execution_time = end_time - start_time
         return (
             relevance,
-            original_best_entity_score,
-            original_target_entity_score,
-            original_target_entity_rank,
-            base_pt_best_entity_score,
-            base_pt_target_entity_score,
-            base_pt_target_entity_rank,
-            pt_best_entity_score,
-            pt_target_entity_score,
-            pt_target_entity_rank,
-            execution_time,
+            time.time() - start_time,
         )
 
     # private methods that know how to access cache structures
-
-    def _get_kelpie_dataset_for(self, original_entity_id: int) -> KelpieDataset:
-        """
-        Return the value of the queried key in O(1).
+    def _get_kelpie_dataset(self, original_entity: int) -> KelpieDataset:
+        """Return the value of the queried key in O(1).
         Additionally, move the key to the end to show that it was recently used.
 
         :param original_entity_id:
         :return:
         """
 
-        if original_entity_id not in self._kelpie_dataset_cache:
+        if original_entity not in self.kelpie_dataset_cache:
             kelpie_dataset = KelpieDataset(
-                dataset=self.dataset, entity_id=original_entity_id
+                dataset=self.dataset, entity_id=original_entity
             )
-            self._kelpie_dataset_cache[original_entity_id] = kelpie_dataset
-            self._kelpie_dataset_cache.move_to_end(original_entity_id)
+            self.kelpie_dataset_cache[original_entity] = kelpie_dataset
+            self.kelpie_dataset_cache.move_to_end(original_entity)
 
-            if len(self._kelpie_dataset_cache) > self._kelpie_dataset_cache_size:
-                self._kelpie_dataset_cache.popitem(last=False)
+            if len(self.kelpie_dataset_cache) > self.kelpie_dataset_cache_size:
+                self.kelpie_dataset_cache.popitem(last=False)
 
-        return self._kelpie_dataset_cache[original_entity_id]
-
-    def original_results_for(self, original_triple_to_predict: numpy.array):
-        triple = (
-            original_triple_to_predict[0],
-            original_triple_to_predict[1],
-            original_triple_to_predict[2],
-        )
-        if not triple in self._original_model_results:
-            (
-                target_entity_score,
-                best_entity_score,
-                target_entity_rank,
-            ) = self.extract_detailed_performances_on_triple(
-                self.model, original_triple_to_predict
-            )
-
-            self._original_model_results[triple] = (
-                target_entity_score,
-                best_entity_score,
-                target_entity_rank,
-            )
-
-        return self._original_model_results[triple]
+        return self.kelpie_dataset_cache[original_entity]
 
     def base_post_training_results_for(
         self,
-        kelpie_model: KelpieModel,
-        kelpie_dataset: KelpieDataset,
-        original_triple_to_predict: numpy.array,
+        model: KelpieModel,
+        dataset: KelpieDataset,
+        triple_to_predict,
     ):
-        """
-
+        """Run base post-training on the given model, and return the results on the given triple.
         :param kelpie_model: an UNTRAINED kelpie model that has just been initialized
         :param kelpie_dataset:
         :param original_triple_to_predict:
         :return:
         """
-        original_triple_to_predict = (
-            original_triple_to_predict[0],
-            original_triple_to_predict[1],
-            original_triple_to_predict[2],
-        )
-        kelpie_triple_to_predict = kelpie_dataset.as_kelpie_triple(
-            original_triple=original_triple_to_predict
-        )
 
-        if not original_triple_to_predict in self._base_pt_model_results:
-            original_entity_name = kelpie_dataset.id_to_entity[
-                kelpie_dataset.original_entity_id
-            ]
+        kelpie_triple = dataset.as_kelpie_triple(triple_to_predict)
+
+        if not triple_to_predict in self.base_pt_model_results:
+            entity_name = dataset.id_to_entity[dataset.original_entity_id]
             print(
-                "\t\tRunning base post-training on entity "
-                + original_entity_name
-                + " with no additions"
+                f"\tRunning base post-training on entity {entity_name} with no changes"
             )
             base_pt_model = self.post_train(
-                kelpie_model_to_post_train=kelpie_model,
-                kelpie_training_triples=kelpie_dataset.kelpie_training_triples,
-            )  # type: KelpieModel
-
-            # then check how the base post-trained model performs on the kelpie triple to explain.
-            # This means checking how the "clone entity" (with no additional triples) performs
-            (
-                base_pt_target_entity_score,
-                base_pt_best_entity_score,
-                base_pt_target_entity_rank,
-            ) = self.extract_detailed_performances_on_triple(
-                base_pt_model, kelpie_triple_to_predict
+                model=model,
+                training_triples=dataset.kelpie_training_triples,
             )
 
-            self._base_pt_model_results[original_triple_to_predict] = (
-                base_pt_target_entity_score,
-                base_pt_best_entity_score,
-                base_pt_target_entity_rank,
-            )
+            # Checking how the model performs on the homologous mimic
+            results = self.triple_results(base_pt_model, kelpie_triple)
+            self.base_pt_model_results[triple_to_predict] = results
 
-        return self._base_pt_model_results[original_triple_to_predict]
+        return self.base_pt_model_results[triple_to_predict]
 
     def addition_post_training_results_for(
         self,
-        kelpie_model: KelpieModel,
-        kelpie_dataset: KelpieDataset,
-        original_triple_to_predict: numpy.array,
-        original_triples_to_add: numpy.array,
+        model: KelpieModel,
+        dataset: KelpieDataset,
+        triple_to_predict,
+        triples_to_add,
     ):
         """
 
@@ -401,57 +257,34 @@ class PostTrainingEngine(ExplanationEngine):
         :param original_triples_to_add:
         :return:
         """
-        original_triple_to_predict = (
-            original_triple_to_predict[0],
-            original_triple_to_predict[1],
-            original_triple_to_predict[2],
-        )
-        kelpie_triple_to_predict = kelpie_dataset.as_kelpie_triple(
-            original_triple=original_triple_to_predict
-        )
+        kelpie_triple_to_predict = dataset.as_kelpie_triple(triple_to_predict)
+        dataset.add_training_triples(triples_to_add)
 
-        # these are original triples, and not "kelpie" triples.
-        # the "add_training_triples" method replaces the original entity with the kelpie entity by itself
-        kelpie_dataset.add_training_triples(original_triples_to_add)
-
-        original_entity_name = kelpie_dataset.id_to_entity[
-            kelpie_dataset.original_entity_id
-        ]
+        original_entity_name = dataset.id_to_entity[dataset.original_entity_id]
         print(
-            "\t\tRunning post-training on entity "
-            + original_entity_name
-            + " adding triples: "
+            f"\tRunning post-training on entity {original_entity_name} adding triples: "
         )
-        for x in original_triples_to_add:
-            print("\t\t\t" + kelpie_dataset.printable_triple(x))
+        for x in triples_to_add:
+            print(f"\t\t {dataset.printable_triple(x)}")
 
-        # post-train the kelpie model on the dataset that has undergone the addition
-        cur_kelpie_model = self.post_train(
-            kelpie_model_to_post_train=kelpie_model,
-            kelpie_training_triples=kelpie_dataset.kelpie_training_triples,
-        )  # type: KelpieModel
-
-        # then check how the post-trained model performs on the kelpie triple to explain.
-        # This means checking how the "kelpie entity" (with the added triple) performs, rather than the original entity
-        (
-            pt_target_entity_score,
-            pt_best_entity_score,
-            pt_target_entity_rank,
-        ) = self.extract_detailed_performances_on_triple(
-            cur_kelpie_model, kelpie_triple_to_predict
+        model = self.post_train(
+            model=model,
+            training_triples=dataset.kelpie_training_triples,
         )
+
+        results = self.triple_results(model, kelpie_triple_to_predict)
 
         # undo the addition, to allow the following iterations of this loop
-        kelpie_dataset.undo_last_training_triples_addition()
+        dataset.undo_last_training_triples_addition()
 
-        return pt_target_entity_score, pt_best_entity_score, pt_target_entity_rank
+        return results
 
     def removal_post_training_results_for(
         self,
-        kelpie_model: KelpieModel,
-        kelpie_dataset: KelpieDataset,
-        original_triple_to_predict: numpy.array,
-        original_triples_to_remove: numpy.array,
+        model: KelpieModel,
+        dataset: KelpieDataset,
+        triple_to_predict: np.array,
+        triples_to_remove: np.array,
     ):
         """
         :param kelpie_model: an UNTRAINED kelpie model that has just been initialized
@@ -460,57 +293,30 @@ class PostTrainingEngine(ExplanationEngine):
         :param original_triples_to_remove:
         :return:
         """
+        kelpie_triple_to_predict = dataset.as_kelpie_triple(triple_to_predict)
+        dataset.remove_training_triples(triples_to_remove)
 
-        original_triple_to_predict = (
-            original_triple_to_predict[0],
-            original_triple_to_predict[1],
-            original_triple_to_predict[2],
+        entity_name = dataset.id_to_entity[dataset.original_entity_id]
+        print(f"\tRunning post-training on entity {entity_name} removing triples: ")
+        for x in triples_to_remove:
+            print(f"\t\t {dataset.printable_triple(x)}")
+
+        model = self.post_train(
+            model=model,
+            training_triples=dataset.kelpie_training_triples,
         )
-        kelpie_triple_to_predict = kelpie_dataset.as_kelpie_triple(
-            original_triple=original_triple_to_predict
-        )
 
-        # these are original triples, and not "kelpie" triples.
-        # the "remove_training_triples" method replaces the original entity with the kelpie entity by itself
-        kelpie_dataset.remove_training_triples(original_triples_to_remove)
-
-        original_entity_name = kelpie_dataset.id_to_entity[
-            kelpie_dataset.original_entity_id
-        ]
-        print(
-            "\t\tRunning post-training on entity "
-            + original_entity_name
-            + " removing triples: "
-        )
-        for x in original_triples_to_remove:
-            print("\t\t\t" + kelpie_dataset.printable_triple(x))
-
-        # post-train a kelpie model on the dataset that has undergone the removal
-        cur_kelpie_model = self.post_train(
-            kelpie_model_to_post_train=kelpie_model,
-            kelpie_training_triples=kelpie_dataset.kelpie_training_triples,
-        )  # type: KelpieModel
-
-        # then check how the post-trained model performs on the kelpie triple to explain.
-        # This means checking how the "kelpie entity" (without the removed triples) performs,
-        # rather than the original entity
-        (
-            pt_target_entity_score,
-            pt_best_entity_score,
-            pt_target_entity_rank,
-        ) = self.extract_detailed_performances_on_triple(
-            cur_kelpie_model, kelpie_triple_to_predict
-        )
+        results = self.triple_results(model, kelpie_triple_to_predict)
 
         # undo the removal, to allow the following iterations of this loop
-        kelpie_dataset.undo_last_training_triples_removal()
+        dataset.undo_last_training_triples_removal()
 
-        return pt_target_entity_score, pt_best_entity_score, pt_target_entity_rank
-
-    # private methods to do stuff
+        return results
 
     def post_train(
-        self, kelpie_model_to_post_train: KelpieModel, kelpie_training_triples: numpy.array
+        self,
+        model: KelpieModel,
+        training_triples: np.array,
     ):
         """
 
@@ -518,55 +324,37 @@ class PostTrainingEngine(ExplanationEngine):
         :param kelpie_training_triples:
         :return:
         """
-        # kelpie_model_class = self.model.kelpie_model_class()
-        # kelpie_model = kelpie_model_class(model=self.model, dataset=kelpie_dataset)
-        kelpie_model_to_post_train.to("cuda")
+        model.to("cuda")
 
         optimizer = self.kelpie_optimizer_class(
-            model=kelpie_model_to_post_train,
+            model=model,
             hyperparameters=self.hyperparameters,
             verbose=False,
         )
-        optimizer.train(training_triples=kelpie_training_triples)
-        return kelpie_model_to_post_train
+        optimizer.train(training_triples=np.array(training_triples))
+        return model
 
-    def extract_detailed_performances_on_triple(
-        self, model: Model, triple: numpy.array
-    ):
+    def triple_results(self, model: Model, triple):
         model.eval()
-        head_id, relation_id, tail_id = triple
+        head, relation, tail = triple
 
-        # check how the model performs on the triple to explain
-        all_scores = model.all_scores(numpy.array([triple])).detach().cpu().numpy()[0]
-        target_entity_score = all_scores[
-            tail_id
-        ]  # todo: this only works in "head" perspective
-        filter_out = (
-            model.dataset.to_filter[(head_id, relation_id)]
-            if (head_id, relation_id) in model.dataset.to_filter
-            else []
-        )
-
+        all_scores = model.all_scores(np.array([triple])).detach().cpu().numpy()[0]        
+        # todo: this only works in "head" perspective
+        target_score = all_scores[tail]
+        filter_out = model.dataset.to_filter.get((head, relation), [])
         if model.is_minimizer():
             all_scores[filter_out] = 1e6
-            # if the target score had been filtered out, put it back
-            # (this may happen in necessary mode, where we may run this method on the actual test triple;
-            # not in sufficient mode, where we run this method on the unseen "triples to convert")
-            all_scores[tail_id] = target_entity_score
-            best_entity_score = numpy.min(all_scores)
-            target_entity_rank = numpy.sum(
-                all_scores <= target_entity_score
-            )  # we use min policy here
-
+            all_scores[tail] = target_score
+            best_score = np.min(all_scores)
+            target_rank = np.sum(all_scores <= target_score)
         else:
             all_scores[filter_out] = -1e6
-            # if the target score had been filtered out, put it back
-            # (this may happen in necessary mode, where we may run this method on the actual test triple;
-            # not in sufficient mode, where we run this method on the unseen "triples to convert")
-            all_scores[tail_id] = target_entity_score
-            best_entity_score = numpy.max(all_scores)
-            target_entity_rank = numpy.sum(
-                all_scores >= target_entity_score
-            )  # we use min policy here
+            best_score = np.max(all_scores)
+            target_rank = np.sum(all_scores >= target_score)
+            all_scores[tail] = target_score
 
-        return target_entity_score, best_entity_score, target_entity_rank
+        return {
+            "target_score": target_score,
+            "best_score": best_score,
+            "target_rank": target_rank,
+        }

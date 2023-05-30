@@ -34,7 +34,7 @@ class DataPoisoningEngine(ExplanationEngine):
 
         triple_to_remove = triples_to_remove[0]
 
-        head_id, relation_id, tail_id = triple_to_explain
+        head_id, _, tail_id = triple_to_explain
         entity_to_explain_id = head_id if perspective == "head" else tail_id
 
         # this is EXTREMELY important in models with dropout and/or batch normalization.
