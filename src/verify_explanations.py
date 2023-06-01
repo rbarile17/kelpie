@@ -11,19 +11,24 @@ from collections import defaultdict
 from . import ALL_DATASET_NAMES
 from .data import MANY_TO_ONE, ONE_TO_ONE
 from .data import Dataset
-from .link_prediction.optimization import MultiClassNLLOptimizer
-from .link_prediction.models import ComplEx
+from .link_prediction.optimization import (
+    MultiClassNLLOptimizer,
+    PairwiseRankingOptimizer,
+)
+from .link_prediction.models import ComplEx, TransE
 from .link_prediction.models import (
-    LEARNING_RATE,
-    OPTIMIZER_NAME,
+    BATCH_SIZE,
     DECAY_1,
     DECAY_2,
-    REGULARIZER_WEIGHT,
-    EPOCHS,
-    BATCH_SIZE,
-    REGULARIZER_NAME,
     DIMENSION,
+    EPOCHS,
     INIT_SCALE,
+    LEARNING_RATE,
+    MARGIN,
+    NEGATIVE_TRIPLES_RATIO,
+    OPTIMIZER_NAME,
+    REGULARIZER_NAME,
+    REGULARIZER_WEIGHT,
 )
 
 
@@ -39,6 +44,12 @@ def parse_args():
         choices=datasets,
         help="Dataset in {}".format(datasets),
         required=True,
+    )
+
+    parser.add_argument(
+        "--model",
+        choices=["ConvE", "ComplEx", "TransE"],
+        help=f"Model in {['ConvE', 'ComplEx', 'TransE']}",
     )
 
     parser.add_argument(
@@ -100,6 +111,24 @@ def parse_args():
         help="The explanation mode",
     )
 
+    parser.add_argument(
+        "--margin", type=int, default=5, help="Margin for pairwise ranking loss."
+    )
+
+    parser.add_argument(
+        "--negative_samples_ratio",
+        type=int,
+        default=3,
+        help="Number of negative samples for each positive sample.",
+    )
+
+    parser.add_argument(
+        "--regularizer_weight",
+        type=float,
+        default=0.0,
+        help="Weight for L2 regularization.",
+    )
+
     return parser.parse_args()
 
 
@@ -111,26 +140,41 @@ def main(args):
     torch.cuda.set_rng_state(torch.cuda.get_rng_state())
     torch.backends.cudnn.deterministic = True
 
-    print(f"Loading dataset {args.dataset}...")
-    dataset = Dataset(dataset=args.dataset)
-
-    hyperparameters = {
-        DIMENSION: args.dimension,
-        INIT_SCALE: args.init,
-        LEARNING_RATE: args.learning_rate,
-        OPTIMIZER_NAME: args.optimizer,
-        DECAY_1: args.decay1,
-        DECAY_2: args.decay2,
-        REGULARIZER_WEIGHT: args.reg,
-        EPOCHS: args.max_epochs,
-        BATCH_SIZE: args.batch_size,
-        REGULARIZER_NAME: "N3",
-    }
-
     with open("output.json", "r") as input_file:
         explanations = json.load(input_file)
 
-    model = ComplEx(dataset=dataset, hyperparameters=hyperparameters, init_random=True)
+    print(f"Loading dataset {args.dataset}...")
+    dataset = Dataset(dataset=args.dataset)
+
+    if args.model == "ComplEx":
+        hyperparameters = {
+            DIMENSION: args.dimension,
+            INIT_SCALE: args.init,
+            LEARNING_RATE: args.learning_rate,
+            OPTIMIZER_NAME: args.optimizer,
+            DECAY_1: args.decay1,
+            DECAY_2: args.decay2,
+            REGULARIZER_WEIGHT: args.reg,
+            EPOCHS: args.max_epochs,
+            BATCH_SIZE: args.batch_size,
+            REGULARIZER_NAME: "N3",
+        }
+        model = ComplEx(
+            dataset=dataset, hyperparameters=hyperparameters, init_random=True
+        )
+    elif args.model == "TransE":
+        hyperparameters = {
+            DIMENSION: args.dimension,
+            MARGIN: args.margin,
+            NEGATIVE_TRIPLES_RATIO: args.negative_samples_ratio,
+            REGULARIZER_WEIGHT: args.regularizer_weight,
+            BATCH_SIZE: args.batch_size,
+            LEARNING_RATE: args.learning_rate,
+            EPOCHS: args.max_epochs,
+        }
+        model = TransE(
+            dataset=dataset, hyperparameters=hyperparameters, init_random=True
+        )
     model.to("cuda")
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
@@ -199,12 +243,20 @@ def main(args):
             triple: result for triple, result in zip(triples_to_convert, results)
         }
 
-        new_model = ComplEx(
-            dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
-        )
-        new_optimizer = MultiClassNLLOptimizer(
-            model=new_model, hyperparameters=hyperparameters
-        )
+        if args.model == "ComplEx":
+            new_model = ComplEx(
+                dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
+            )
+            new_optimizer = MultiClassNLLOptimizer(
+                model=new_model, hyperparameters=hyperparameters
+            )
+        elif args.model == "TransE":
+            new_model = TransE(
+                dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
+            )
+            new_optimizer = PairwiseRankingOptimizer(
+                model=new_model, hyperparameters=hyperparameters
+            )
         new_optimizer.train(training_triples=new_dataset.training_triples)
         new_model.eval()
         new_results = new_model.predict_triples(numpy.array(triples_to_convert))
@@ -267,20 +319,27 @@ def main(args):
         print("Removing triples: ")
         for head, relation, tail in triples_to_remove:
             print(f"\t{dataset.printable_triple((head, relation, tail))}")
-        
+
         new_dataset.remove_training_triples(triples_to_remove)
 
         results = model.predict_triples(numpy.array(triples_to_explain))
         results = {
             triple: result for triple, result in zip(triples_to_explain, results)
         }
-
-        new_model = ComplEx(
-            dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
-        )
-        new_optimizer = MultiClassNLLOptimizer(
-            model=new_model, hyperparameters=hyperparameters
-        )
+        if args.model == "ComplEx":
+            new_model = ComplEx(
+                dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
+            )
+            new_optimizer = MultiClassNLLOptimizer(
+                model=new_model, hyperparameters=hyperparameters
+            )
+        elif args.model == "TransE":
+            new_model = TransE(
+                dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
+            )
+            new_optimizer = PairwiseRankingOptimizer(
+                model=new_model, hyperparameters=hyperparameters
+            )
         new_optimizer.train(training_triples=new_dataset.training_triples)
         new_model.eval()
 

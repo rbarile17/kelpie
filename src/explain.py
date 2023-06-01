@@ -17,18 +17,20 @@ from .prefilters import (
     NO_PREFILTER,
     WEIGHTED_TOPOLOGY_PREFILTER,
 )
-from .link_prediction.models import ComplEx
+from .link_prediction.models import ComplEx, TransE
 from .link_prediction.models import (
-    LEARNING_RATE,
-    OPTIMIZER_NAME,
+    BATCH_SIZE,
     DECAY_1,
     DECAY_2,
-    REGULARIZER_WEIGHT,
-    EPOCHS,
-    BATCH_SIZE,
-    REGULARIZER_NAME,
     DIMENSION,
+    EPOCHS,
     INIT_SCALE,
+    LEARNING_RATE,
+    MARGIN,
+    NEGATIVE_TRIPLES_RATIO,
+    OPTIMIZER_NAME,
+    REGULARIZER_NAME,
+    REGULARIZER_WEIGHT,
 )
 
 
@@ -44,6 +46,12 @@ def parse_args():
         choices=datasets,
         help="Dataset in {}".format(datasets),
         required=True,
+    )
+
+    parser.add_argument(
+        "--model",
+        choices=["ConvE", "ComplEx", "TransE"],
+        help=f"Model in {['ConvE', 'ComplEx', 'TransE']}",
     )
 
     optimizers = ["Adagrad", "Adam", "SGD"]
@@ -63,6 +71,24 @@ def parse_args():
         default=200,
         type=int,
         help="Number of epochs to run in post-training",
+    )
+
+    parser.add_argument(
+        "--margin", type=int, default=5, help="Margin for pairwise ranking loss."
+    )
+
+    parser.add_argument(
+        "--negative_samples_ratio",
+        type=int,
+        default=3,
+        help="Number of negative samples for each positive sample.",
+    )
+
+    parser.add_argument(
+        "--regularizer_weight",
+        type=float,
+        default=0.0,
+        help="Weight for L2 regularization.",
     )
 
     parser.add_argument(
@@ -171,19 +197,6 @@ def main(args):
     random.seed(seed)
     torch.cuda.set_rng_state(torch.cuda.get_rng_state())
 
-    hyperparameters = {
-        DIMENSION: args.dimension,
-        INIT_SCALE: args.init,
-        LEARNING_RATE: args.learning_rate,
-        OPTIMIZER_NAME: args.optimizer,
-        DECAY_1: args.decay1,
-        DECAY_2: args.decay2,
-        REGULARIZER_WEIGHT: args.reg,
-        EPOCHS: args.max_epochs,
-        BATCH_SIZE: args.batch_size,
-        REGULARIZER_NAME: "N3",
-    }
-
     prefilter = args.prefilter
     relevance_threshold = args.relevance_threshold
 
@@ -194,11 +207,41 @@ def main(args):
     with open(args.triples_to_explain, "r") as triples_file:
         triples_to_explain = [x.strip().split("\t") for x in triples_file.readlines()]
 
-    model = ComplEx(dataset=dataset, hyperparameters=hyperparameters, init_random=True)
+    if args.model == "ComplEx":
+        hyperparameters = {
+            DIMENSION: args.dimension,
+            INIT_SCALE: args.init,
+            LEARNING_RATE: args.learning_rate,
+            OPTIMIZER_NAME: args.optimizer,
+            DECAY_1: args.decay1,
+            DECAY_2: args.decay2,
+            REGULARIZER_WEIGHT: args.reg,
+            EPOCHS: args.max_epochs,
+            BATCH_SIZE: args.batch_size,
+            REGULARIZER_NAME: "N3",
+        }
+
+        model = ComplEx(
+            dataset=dataset, hyperparameters=hyperparameters, init_random=True
+        )
+
+    elif args.model == "TransE":
+        hyperparameters = {
+            DIMENSION: args.dimension,
+            MARGIN: args.margin,
+            NEGATIVE_TRIPLES_RATIO: args.negative_samples_ratio,
+            REGULARIZER_WEIGHT: args.regularizer_weight,
+            BATCH_SIZE: args.batch_size,
+            LEARNING_RATE: args.learning_rate,
+            EPOCHS: args.max_epochs,
+        }
+        model = TransE(
+            dataset=dataset, hyperparameters=hyperparameters, init_random=True
+        )
+
     model.to("cuda")
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
-
     start_time = time.time()
 
     if args.baseline == "data_poisoning":
@@ -232,7 +275,7 @@ def main(args):
     for i, triple in enumerate(triples_to_explain):
         head, relation, tail = triple
         print(
-            f"\nExplaining triple {i + 1} on {len(triples_to_explain)}: " \
+            f"\nExplaining triple {i + 1} on {len(triples_to_explain)}: "
             f"<{head},{relation},{tail}>"
         )
         triple = dataset.ids_triple(triple)
@@ -283,7 +326,7 @@ def main(args):
             )
 
     print("Required time: " + str(time.time() - start_time) + " seconds")
-    with open("output.json", "w") as output:
+    with open("output_weighted.json", "w") as output:
         json.dump(explanations, output)
 
 
