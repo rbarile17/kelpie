@@ -1,1 +1,1 @@
-from .utils import jaccard_similarity
+from .utils import jaccard_similarity, pairs
