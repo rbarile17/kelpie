@@ -1,12 +1,14 @@
 import torch
 import numpy as np
+import pandas as pd
 
+from ast import literal_eval
 from collections import defaultdict
 
 from pykeen.datasets import get_dataset
 
 from .names import ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
-from .. import DBPEDIA50_PATH
+from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
 
 
 class Dataset:
@@ -18,6 +20,31 @@ class Dataset:
                 testing=DBPEDIA50_PATH / "test.txt",
                 validation=DBPEDIA50_PATH / "valid.txt",
             )
+
+            e_sem = pd.read_csv(
+                DBPEDIA50_PATH / "entities.csv",
+                converters={"classes": literal_eval},
+            )
+            e_sem["entity"] = e_sem["entity"].map(self.entity_to_id.get)
+            e_sem["classes_str"] = e_sem["classes"].map(", ".join)
+
+            e_sem_impl = pd.read_csv(
+                DBPEDIA50_REASONED_PATH / "entities.csv",
+                converters={"classes": literal_eval},
+            )
+            e_sem_impl["entity"] = e_sem_impl["entity"].map(self.entity_to_id.get)
+            e_sem_impl["classes_str"] = e_sem_impl["classes"].map(", ".join)
+
+            r_sem = pd.read_csv(
+                DBPEDIA50_PATH / "relations.csv",
+                converters={"domains": literal_eval, "ranges": literal_eval},
+            )
+            r_sem["relation"] = r_sem["relation"].map(self.relation_to_id.get)
+
+            self.entities_semantic = e_sem
+            self.entities_semantic_impl = e_sem_impl
+            self.relations_semantic = r_sem
+
         else:
             self.dataset = get_dataset(dataset=dataset)
         self.id_to_entity = {v: k for k, v in self.dataset.entity_to_id.items()}
