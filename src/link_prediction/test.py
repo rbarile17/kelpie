@@ -5,16 +5,22 @@ from .. import ALL_DATASET_NAMES
 from ..data import Dataset
 
 from .evaluation import Evaluator
-from .models import ComplEx, TransE
+from .models import ConvE, ComplEx, TransE
 from .models import (
-    BATCH_SIZE,
-    DIMENSION,
-    EPOCHS,
-    INIT_SCALE,
     LEARNING_RATE,
+    REGULARIZER_WEIGHT,
+    BATCH_SIZE,
+    DECAY,
+    EPOCHS,
+    DIMENSION,
+    HIDDEN_LAYER_SIZE,
+    INIT_SCALE,
+    INPUT_DROPOUT,
+    FEATURE_MAP_DROPOUT,
+    HIDDEN_DROPOUT,
+    LABEL_SMOOTHING,
     MARGIN,
     NEGATIVE_TRIPLES_RATIO,
-    REGULARIZER_WEIGHT,
 )
 
 parser = argparse.ArgumentParser(description="Kelpie")
@@ -37,6 +43,34 @@ parser.add_argument("--batch_size", type=int, default=128, help="Batch size.")
 
 parser.add_argument(
     "--learning_rate", type=float, default=0.0005, help="Learning rate."
+)
+parser.add_argument("--decay_rate", type=float, default=1.0, help="Decay rate.")
+
+parser.add_argument(
+    "--input_dropout", type=float, default=0.3, nargs="?", help="Input layer dropout."
+)
+
+parser.add_argument(
+    "--hidden_dropout", type=float, default=0.4, help="Dropout after the hidden layer."
+)
+
+parser.add_argument(
+    "--feature_map_dropout",
+    type=float,
+    default=0.5,
+    help="Dropout after the convolutional layer.",
+)
+
+parser.add_argument(
+    "--label_smoothing", type=float, default=0.1, help="Amount of label smoothing."
+)
+
+parser.add_argument(
+    "--hidden_size",
+    type=int,
+    default=9728,
+    help="The side of the hidden layer. "
+    "The required size changes with the size of the embeddings. Default: 9728 (embedding size 200).",
 )
 
 parser.add_argument(
@@ -87,6 +121,21 @@ elif args.model == "TransE":
     }
 
     model = TransE(dataset=dataset, hyperparameters=hyperparameters, init_random=True)
+elif args.model == "ConvE":
+    hyperparameters = {
+        DIMENSION: args.dimension,
+        INPUT_DROPOUT: args.input_dropout,
+        FEATURE_MAP_DROPOUT: args.feature_map_dropout,
+        HIDDEN_DROPOUT: args.hidden_dropout,
+        HIDDEN_LAYER_SIZE: args.hidden_size,
+        BATCH_SIZE: args.batch_size,
+        LEARNING_RATE: args.learning_rate,
+        DECAY: args.decay_rate,
+        LABEL_SMOOTHING: args.label_smoothing,
+        EPOCHS: args.max_epochs,
+    }
+
+    model = ConvE(dataset=dataset, hyperparameters=hyperparameters, init_random=True)
 
 model.to("cuda")
 model.load_state_dict(torch.load(args.model_path))
