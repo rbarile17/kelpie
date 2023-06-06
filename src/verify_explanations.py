@@ -12,23 +12,30 @@ from . import ALL_DATASET_NAMES
 from .data import MANY_TO_ONE, ONE_TO_ONE
 from .data import Dataset
 from .link_prediction.optimization import (
+    BCEOptimizer,
     MultiClassNLLOptimizer,
     PairwiseRankingOptimizer,
 )
-from .link_prediction.models import ComplEx, TransE
+from .link_prediction.models import ConvE, ComplEx, TransE
 from .link_prediction.models import (
-    BATCH_SIZE,
-    DECAY_1,
-    DECAY_2,
-    DIMENSION,
-    EPOCHS,
-    INIT_SCALE,
-    LEARNING_RATE,
-    MARGIN,
-    NEGATIVE_TRIPLES_RATIO,
     OPTIMIZER_NAME,
+    LEARNING_RATE,
     REGULARIZER_NAME,
     REGULARIZER_WEIGHT,
+    BATCH_SIZE,
+    DECAY,
+    DECAY_1,
+    DECAY_2,
+    EPOCHS,
+    DIMENSION,
+    HIDDEN_LAYER_SIZE,
+    INIT_SCALE,
+    INPUT_DROPOUT,
+    FEATURE_MAP_DROPOUT,
+    HIDDEN_DROPOUT,
+    LABEL_SMOOTHING,
+    MARGIN,
+    NEGATIVE_TRIPLES_RATIO,
 )
 
 
@@ -83,6 +90,41 @@ def parse_args():
 
     parser.add_argument(
         "--learning_rate", default=1e-1, type=float, help="Learning rate"
+    )
+    parser.add_argument("--decay_rate", type=float, default=1.0, help="Decay rate.")
+
+    parser.add_argument(
+        "--input_dropout",
+        type=float,
+        default=0.3,
+        nargs="?",
+        help="Input layer dropout.",
+    )
+
+    parser.add_argument(
+        "--hidden_dropout",
+        type=float,
+        default=0.4,
+        help="Dropout after the hidden layer.",
+    )
+
+    parser.add_argument(
+        "--feature_map_dropout",
+        type=float,
+        default=0.5,
+        help="Dropout after the convolutional layer.",
+    )
+
+    parser.add_argument(
+        "--label_smoothing", type=float, default=0.1, help="Amount of label smoothing."
+    )
+
+    parser.add_argument(
+        "--hidden_size",
+        type=int,
+        default=9728,
+        help="The side of the hidden layer. "
+        "The required size changes with the size of the embeddings. Default: 9728 (embedding size 200).",
     )
 
     parser.add_argument("--reg", default=0, type=float, help="Regularization weight")
@@ -175,6 +217,24 @@ def main(args):
         model = TransE(
             dataset=dataset, hyperparameters=hyperparameters, init_random=True
         )
+    elif args.model == "ConvE":
+        hyperparameters = {
+            DIMENSION: args.dimension,
+            INPUT_DROPOUT: args.input_dropout,
+            FEATURE_MAP_DROPOUT: args.feature_map_dropout,
+            HIDDEN_DROPOUT: args.hidden_dropout,
+            HIDDEN_LAYER_SIZE: args.hidden_size,
+            BATCH_SIZE: args.batch_size,
+            LEARNING_RATE: args.learning_rate,
+            DECAY: args.decay_rate,
+            LABEL_SMOOTHING: args.label_smoothing,
+            EPOCHS: args.max_epochs,
+        }
+
+        model = ConvE(
+            dataset=dataset, hyperparameters=hyperparameters, init_random=True
+        )
+
     model.to("cuda")
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
@@ -255,6 +315,13 @@ def main(args):
                 dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
             )
             new_optimizer = PairwiseRankingOptimizer(
+                model=new_model, hyperparameters=hyperparameters
+            )
+        elif args.model == "ConvE":
+            new_model = ConvE(
+                dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
+            )
+            new_optimizer = BCEOptimizer(
                 model=new_model, hyperparameters=hyperparameters
             )
         new_optimizer.train(training_triples=new_dataset.training_triples)
@@ -338,6 +405,13 @@ def main(args):
                 dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
             )
             new_optimizer = PairwiseRankingOptimizer(
+                model=new_model, hyperparameters=hyperparameters
+            )
+        elif args.model == "ConvE":
+            new_model = ConvE(
+                dataset=new_dataset, hyperparameters=hyperparameters, init_random=True
+            )
+            new_optimizer = BCEOptimizer(
                 model=new_model, hyperparameters=hyperparameters
             )
         new_optimizer.train(training_triples=new_dataset.training_triples)
