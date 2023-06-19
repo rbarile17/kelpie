@@ -8,8 +8,8 @@ class Optimizer:
     The Optimizer class provides the interface that any LP Optimizer should implement.
     """
 
-    def __init__(self, model: Model, hyperparameters: dict, verbose: bool = True):
-        self.model = model  # type:Model
+    def __init__(self, model: Model, hp: dict, verbose: bool = True):
+        self.model = model
         self.dataset = self.model.dataset
         self.verbose = verbose
 

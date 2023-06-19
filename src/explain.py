@@ -1,390 +1,179 @@
-import argparse
 import json
-import random
-import time
+import click
 
-import numpy
 import torch
 
-from . import ALL_DATASET_NAMES
-from .data import Dataset
-from .explanation_systems import Criage, DataPoisoning, Kelpie
+from . import BASELINES, DATASETS, MODELS_PATH
+from .link_prediction import MODEL_REGISTRY
 from .prefilters import (
     TOPOLOGY_PREFILTER,
     TYPE_PREFILTER,
     NO_PREFILTER,
     WEIGHTED_TOPOLOGY_PREFILTER,
 )
-from .link_prediction.models import ConvE, ComplEx, TransE
-from .link_prediction.models import (
-    OPTIMIZER_NAME,
-    LEARNING_RATE,
-    REGULARIZER_NAME,
-    REGULARIZER_WEIGHT,
-    BATCH_SIZE,
-    DECAY,
-    DECAY_1,
-    DECAY_2,
-    EPOCHS,
-    DIMENSION,
-    HIDDEN_LAYER_SIZE,
-    INIT_SCALE,
-    INPUT_DROPOUT,
-    FEATURE_MAP_DROPOUT,
-    HIDDEN_DROPOUT,
-    LABEL_SMOOTHING,
-    MARGIN,
-    NEGATIVE_TRIPLES_RATIO,
+
+from .data import Dataset
+from .explanation_builders import CriageBuilder, DataPoisoningBuilder, StochasticBuilder
+from .pipeline import NecessaryPipeline, SufficientPipeline
+from .prefilters import (
+    CriagePreFilter,
+    NoPreFilter,
+    TopologyPreFilter,
+    TypeBasedPreFilter,
+    WeightedTopologyPreFilter,
 )
+from .relevance_engines import (
+    NecessaryCriageEngine,
+    SufficientCriageEngine,
+    NecessaryDPEngine,
+    SufficientDPEngine,
+    NecessaryPostTrainingEngine,
+    SufficientPostTrainingEngine,
+)
+from .utils import set_seeds
+
+PREFILTERS = [
+    TOPOLOGY_PREFILTER,
+    TYPE_PREFILTER,
+    NO_PREFILTER,
+    WEIGHTED_TOPOLOGY_PREFILTER,
+]
+modes = ["necessary", "sufficient"]
 
 
-def parse_args():
-    datasets = ALL_DATASET_NAMES
+def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi):
+    prefilter_map = {
+        TOPOLOGY_PREFILTER: TopologyPreFilter,
+        TYPE_PREFILTER: TypeBasedPreFilter,
+        NO_PREFILTER: NoPreFilter,
+        WEIGHTED_TOPOLOGY_PREFILTER: WeightedTopologyPreFilter,
+    }
 
-    parser = argparse.ArgumentParser(
-        description="Model-agnostic tool for explaining link predictions"
-    )
+    if mode == "necessary":
+        if baseline == "criage":
+            prefilter = CriagePreFilter(dataset)
+            engine = NecessaryCriageEngine(model, dataset)
+            builder = CriageBuilder(dataset, engine)
+        elif baseline == "data_poisoning":
+            prefilter = prefilter_map.get(prefilter, NoPreFilter)(dataset=dataset)
+            engine = NecessaryDPEngine(model, dataset, hp["lr"])
+            builder = DataPoisoningBuilder(dataset, engine)
+        else:
+            DEFAULT_XSI_THRESHOLD = 5
+            xsi = xsi if xsi is not None else DEFAULT_XSI_THRESHOLD
+            prefilter = prefilter_map.get(prefilter, TopologyPreFilter)(dataset=dataset)
+            engine = NecessaryPostTrainingEngine(model, dataset, hp)
+            builder = StochasticBuilder(xsi, engine)
+        pipeline = NecessaryPipeline(dataset, prefilter, builder)
+    elif mode == "sufficient":
+        if baseline == "criage":
+            prefilter = CriagePreFilter(dataset)
+            engine = SufficientCriageEngine(model, dataset)
+            builder = CriageBuilder(dataset, engine)
+        elif baseline == "data_poisoning":
+            engine = SufficientDPEngine(model, dataset)
+            builder = DataPoisoningBuilder(dataset, engine)
+        else:
+            DEFAULT_XSI_THRESHOLD = 0.9
+            xsi = xsi if xsi is not None else DEFAULT_XSI_THRESHOLD
+            prefilter = prefilter_map.get(prefilter, TopologyPreFilter)(dataset=dataset)
+            engine = SufficientPostTrainingEngine(model, dataset, hp)
+            builder = StochasticBuilder(xsi, engine)
+        pipeline = SufficientPipeline(dataset, prefilter, builder)
 
-    parser.add_argument(
-        "--dataset",
-        choices=datasets,
-        help="Dataset in {}".format(datasets),
-        required=True,
-    )
-
-    parser.add_argument(
-        "--model",
-        choices=["ConvE", "ComplEx", "TransE"],
-        help=f"Model in {['ConvE', 'ComplEx', 'TransE']}",
-    )
-
-    optimizers = ["Adagrad", "Adam", "SGD"]
-    parser.add_argument(
-        "--optimizer",
-        choices=optimizers,
-        default="Adagrad",
-        help="Optimizer in {} to use in post-training".format(optimizers),
-    )
-
-    parser.add_argument(
-        "--batch_size", default=100, type=int, help="Batch size to use in post-training"
-    )
-
-    parser.add_argument(
-        "--max_epochs",
-        default=200,
-        type=int,
-        help="Number of epochs to run in post-training",
-    )
-
-    parser.add_argument(
-        "--margin", type=int, default=5, help="Margin for pairwise ranking loss."
-    )
-
-    parser.add_argument(
-        "--negative_samples_ratio",
-        type=int,
-        default=3,
-        help="Number of negative samples for each positive sample.",
-    )
-
-    parser.add_argument(
-        "--regularizer_weight",
-        type=float,
-        default=0.0,
-        help="Weight for L2 regularization.",
-    )
-
-    parser.add_argument(
-        "--dimension", default=1000, type=int, help="Factorization rank."
-    )
-
-    parser.add_argument(
-        "--learning_rate", default=1e-1, type=float, help="Learning rate"
-    )
-    parser.add_argument("--decay_rate", type=float, default=1.0, help="Decay rate.")
-
-    parser.add_argument(
-        "--input_dropout",
-        type=float,
-        default=0.3,
-        nargs="?",
-        help="Input layer dropout.",
-    )
-
-    parser.add_argument(
-        "--hidden_dropout",
-        type=float,
-        default=0.4,
-        help="Dropout after the hidden layer.",
-    )
-
-    parser.add_argument(
-        "--feature_map_dropout",
-        type=float,
-        default=0.5,
-        help="Dropout after the convolutional layer.",
-    )
-
-    parser.add_argument(
-        "--label_smoothing", type=float, default=0.1, help="Amount of label smoothing."
-    )
-
-    parser.add_argument(
-        "--hidden_size",
-        type=int,
-        default=9728,
-        help="The side of the hidden layer. "
-        "The required size changes with the size of the embeddings. Default: 9728 (embedding size 200).",
-    )
-
-    parser.add_argument("--reg", default=0, type=float, help="Regularization weight")
-
-    parser.add_argument("--init", default=1e-3, type=float, help="Initial scale")
-
-    parser.add_argument(
-        "--decay1",
-        default=0.9,
-        type=float,
-        help="Decay rate for the first moment estimate in Adam",
-    )
-
-    parser.add_argument(
-        "--decay2",
-        default=0.999,
-        type=float,
-        help="Decay rate for second moment estimate in Adam",
-    )
-
-    parser.add_argument(
-        "--model_path",
-        help="Path to the model to explain the predictions of",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--triples_to_explain",
-        type=str,
-        required=True,
-        help="path of the file with the facts to explain the predictions of.",
-    )
-
-    parser.add_argument(
-        "--coverage",
-        type=int,
-        default=10,
-        help="Number of random entities to extract and convert",
-    )
-
-    parser.add_argument(
-        "--baseline",
-        type=str,
-        default=None,
-        choices=[None, "k1", "data_poisoning", "criage"],
-        help="attribute to use when we want to use a baseline rather than the Kelpie engine",
-    )
-
-    parser.add_argument(
-        "--entities_to_convert",
-        type=str,
-        help="path of the file with the entities to convert (only used by baselines)",
-    )
-
-    parser.add_argument(
-        "--mode",
-        type=str,
-        default="sufficient",
-        choices=["sufficient", "necessary"],
-        help="The explanation mode",
-    )
-
-    parser.add_argument(
-        "--relevance_threshold",
-        type=float,
-        default=None,
-        help="The relevance acceptance threshold to use",
-    )
-
-    prefilters = [
-        TOPOLOGY_PREFILTER,
-        TYPE_PREFILTER,
-        NO_PREFILTER,
-        WEIGHTED_TOPOLOGY_PREFILTER,
-    ]
-    parser.add_argument(
-        "--prefilter",
-        choices=prefilters,
-        default="graph-based",
-        help="Prefilter type in {} to use in pre-filtering".format(prefilters),
-    )
-
-    parser.add_argument(
-        "--prefilter_threshold",
-        type=int,
-        default=20,
-        help="The number of promising training facts to keep after prefiltering",
-    )
-
-    return parser.parse_args()
+    return pipeline
 
 
-def main(args):
-    seed = 42
-    torch.backends.cudnn.deterministic = True
-    numpy.random.seed(seed)
-    torch.manual_seed(seed)
-    random.seed(seed)
-    torch.cuda.set_rng_state(torch.cuda.get_rng_state())
+@click.command()
+@click.option("--dataset", type=click.Choice(DATASETS))
+@click.option(
+    "--model_config",
+    type=click.Path(exists=True),
+    help="Path of the model config (.json or .yml).",
+)
+@click.option(
+    "--preds",
+    type=click.Path(exists=True),
+    help="Path of the the predictions to explain.",
+)
+@click.option(
+    "--coverage",
+    type=int,
+    default=10,
+    help="Number of entities to convert (sufficient mode only).",
+)
+@click.option("--baseline", type=click.Choice(BASELINES))
+@click.option("--mode", type=click.Choice(modes))
+@click.option(
+    "--relevance_threshold",
+    type=float,
+    help="The relevance acceptance threshold.",
+)
+@click.option("--prefilter", type=click.Choice(PREFILTERS))
+@click.option(
+    "--prefilter_threshold",
+    type=int,
+    default=20,
+    help=f"The number of triples to select in pre-filtering.",
+)
+def main(
+    dataset,
+    model_config,
+    preds,
+    coverage,
+    baseline,
+    mode,
+    prefilter,
+    relevance_threshold,
+    prefilter_threshold,
+):
+    set_seeds(42)
 
-    prefilter = args.prefilter
-    relevance_threshold = args.relevance_threshold
+    model_config = json.load(open(model_config, "r"))
+    model = model_config["model"]
+    model_path = model_config.get("model_path", MODELS_PATH / f"{model}_{dataset}.pt")
 
-    print(f"Loading dataset {args.dataset}...")
-    dataset = Dataset(dataset=args.dataset)
+    print("Reading preds...")
+    if preds is None:
+        preds = f"preds/{model}_{dataset}.csv"
+    with open(preds, "r") as preds:
+        preds = [x.strip().split("\t") for x in preds.readlines()]
 
-    print("Reading triples to explain...")
-    with open(args.triples_to_explain, "r") as triples_file:
-        triples_to_explain = [x.strip().split("\t") for x in triples_file.readlines()]
+    print(f"Loading dataset {dataset}...")
+    dataset = Dataset(dataset=dataset)
 
-    if args.model == "ComplEx":
-        hyperparameters = {
-            DIMENSION: args.dimension,
-            INIT_SCALE: args.init,
-            LEARNING_RATE: args.learning_rate,
-            OPTIMIZER_NAME: args.optimizer,
-            DECAY_1: args.decay1,
-            DECAY_2: args.decay2,
-            REGULARIZER_WEIGHT: args.reg,
-            EPOCHS: args.max_epochs,
-            BATCH_SIZE: args.batch_size,
-            REGULARIZER_NAME: "N3",
-        }
-
-        model = ComplEx(
-            dataset=dataset, hyperparameters=hyperparameters, init_random=True
-        )
-
-    elif args.model == "TransE":
-        hyperparameters = {
-            DIMENSION: args.dimension,
-            MARGIN: args.margin,
-            NEGATIVE_TRIPLES_RATIO: args.negative_samples_ratio,
-            REGULARIZER_WEIGHT: args.regularizer_weight,
-            BATCH_SIZE: args.batch_size,
-            LEARNING_RATE: args.learning_rate,
-            EPOCHS: args.max_epochs,
-        }
-        model = TransE(
-            dataset=dataset, hyperparameters=hyperparameters, init_random=True
-        )
-    elif args.model == "ConvE":
-        hyperparameters = {
-            DIMENSION: args.dimension,
-            INPUT_DROPOUT: args.input_dropout,
-            FEATURE_MAP_DROPOUT: args.feature_map_dropout,
-            HIDDEN_DROPOUT: args.hidden_dropout,
-            HIDDEN_LAYER_SIZE: args.hidden_size,
-            BATCH_SIZE: args.batch_size,
-            LEARNING_RATE: args.learning_rate,
-            DECAY: args.decay_rate,
-            LABEL_SMOOTHING: args.label_smoothing,
-            EPOCHS: args.max_epochs,
-        }
-
-        model = ConvE(
-            dataset=dataset, hyperparameters=hyperparameters, init_random=True
-        )
-
+    print(f"Loading model {model}...")
+    model_class = MODEL_REGISTRY[model]["class"]
+    hyperparams_class = model_class.get_hyperparams_class()
+    model_hp = hyperparams_class(**model_config["model_params"])
+    model = model_class(dataset=dataset, hp=model_hp, init_random=True)
     model.to("cuda")
-    model.load_state_dict(torch.load(args.model_path))
-    model.eval()
-    start_time = time.time()
 
-    if args.baseline == "data_poisoning":
-        pipeline = DataPoisoning(
-            model=model,
-            dataset=dataset,
-            hyperparameters=hyperparameters,
-            prefilter_type=prefilter,
-        )
-    elif args.baseline == "criage":
-        pipeline = Criage(model=model, dataset=dataset, hyperparameters=hyperparameters)
-    elif args.baseline == "k1":
-        pipeline = Kelpie(
-            model=model,
-            dataset=dataset,
-            hyperparameters=hyperparameters,
-            prefilter_type=prefilter,
-            relevance_threshold=relevance_threshold,
-            max_explanation_length=1,
-        )
-    else:
-        pipeline = Kelpie(
-            model=model,
-            dataset=dataset,
-            hyperparameters=hyperparameters,
-            prefilter_type=prefilter,
-            relevance_threshold=relevance_threshold,
-        )
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+
+    pipeline = build_pipeline(
+        model,
+        dataset,
+        model_config["training"],
+        mode,
+        baseline,
+        prefilter,
+        relevance_threshold,
+    )
 
     explanations = []
-    for i, triple in enumerate(triples_to_explain):
-        head, relation, tail = triple
-        print(
-            f"\nExplaining triple {i + 1} on {len(triples_to_explain)}: "
-            f"<{head},{relation},{tail}>"
-        )
-        triple = dataset.ids_triple(triple)
+    for pred in preds:
+        s, p, o = pred
+        print(f"\nExplaining pred: <{s}, {p}, {o}>")
+        pred = dataset.ids_triple(pred)
+        explanation = pipeline.explain(pred=pred, prefilter_k=prefilter_threshold)
 
-        if args.mode == "sufficient":
-            (
-                rule_to_relevance,
-                entities_to_convert,
-            ) = pipeline.explain_sufficient(
-                triple_to_explain=triple,
-                perspective="head",
-                num_promising_triples=args.prefilter_threshold,
-                num_entities_to_convert=args.coverage,
-                entities_to_convert=None,
-            )
+        explanations.append(explanation)
 
-            if entities_to_convert is None or len(entities_to_convert) == 0:
-                continue
-            entities_to_convert = [dataset.id_to_entity[x] for x in entities_to_convert]
-
-            rule_to_relevance = [
-                (dataset.labels_triples(rule), relevance)
-                for rule, relevance in rule_to_relevance
-            ]
-
-            explanations.append(
-                {
-                    "triple": dataset.labels_triple(triple),
-                    "entities_to_convert": entities_to_convert,
-                    "rule_to_relevance": rule_to_relevance,
-                }
-            )
-        elif args.mode == "necessary":
-            rule_to_relevance = pipeline.explain_necessary(
-                triple_to_explain=triple,
-                perspective="head",
-                num_promising_triples=args.prefilter_threshold,
-            )
-            rule_to_relevance = [
-                (dataset.labels_triples(rule), relevance)
-                for rule, relevance in rule_to_relevance
-            ]
-            explanations.append(
-                {
-                    "triple": dataset.labels_triple(triple),
-                    "rule_to_relevance": rule_to_relevance,
-                }
-            )
-
-    print("Required time: " + str(time.time() - start_time) + " seconds")
-    with open("output_weighted.json", "w") as output:
+    with open("output.json", "w") as output:
         json.dump(explanations, output)
 
 
 if __name__ == "__main__":
-    main(parse_args())
+    main()

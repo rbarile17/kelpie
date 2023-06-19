@@ -1,189 +1,149 @@
 import torch
-import tqdm
 import numpy as np
+
+from pydantic import BaseModel
+from tqdm import tqdm
+
 from torch import optim, nn
 
 from .optimizer import Optimizer
 
-from ..regularization import N3, N2
-from ..models import (
-    Model,
-    OPTIMIZER_NAME,
-    BATCH_SIZE,
-    EPOCHS,
-    LEARNING_RATE,
-    DECAY_1,
-    REGULARIZER_NAME,
-    REGULARIZER_WEIGHT,
-    DECAY_2,
-    KelpieModel,
-)
+from ..models import Model, KelpieModel
+from ..regularizers import N3, N2
+
+
+class MultiClassNLLOptimizerHyperParams(BaseModel):
+    optimizer_name: str
+    batch_size: int
+    epochs: int
+    lr: float
+    decay1: float
+    decay2: float
+    regularizer_name: str
+    regularizer_weight: float
 
 
 class MultiClassNLLOptimizer(Optimizer):
-    """
-    This optimizer relies on Multiclass Negative Log Likelihood loss.
-    It is heavily inspired by paper ""
-    Instead of considering each training triple as the "unit" for training,
-    it groups training triples into couples (h, r) -> [all t for which <h, r, t> in training set].
-    Each couple (h, r) with the corresponding tails is treated as if it was one triple.
+    def __init__(
+        self, model: Model, hp: MultiClassNLLOptimizerHyperParams, verbose: bool = True
+    ):
+        Optimizer.__init__(self, model=model, hp=hp, verbose=verbose)
 
-    When passing them to the loss...
+        self.optimizer_name = hp.optimizer_name
+        self.batch_size = hp.batch_size
+        self.epochs = hp.epochs
+        self.lr = hp.lr
+        self.decay1, self.decay2 = hp.decay1, hp.decay2
+        self.regularizer_name = hp.regularizer_name
+        self.regularizer_weight = hp.regularizer_weight
 
-    In our implementation, it is used by the following models:
-        - ComplEx
-        - DistMult
+        optimizers = {"Adagrad": optim.Adagrad, "Adam": optim.Adam, "SGD": optim.SGD}
+        optimizer_args = {"params": model.parameters(), "lr": self.lr}
+        if self.optimizer_name == "Adam":
+            optimizer_args["betas"] = (self.decay1, self.decay2)
 
-    """
+        regularizers = {"N3": N3, "N2": N2}
 
-    def __init__(self, model: Model, hyperparameters: dict, verbose: bool = True):
-        Optimizer.__init__(
-            self, model=model, hyperparameters=hyperparameters, verbose=verbose
-        )
+        self.optimizer = optimizers[self.optimizer_name](**optimizer_args)
+        self.regularizer = regularizers[self.regularizer_name](self.regularizer_weight)
 
-        self.optimizer_name = hyperparameters[OPTIMIZER_NAME]
-        self.batch_size = hyperparameters[BATCH_SIZE]
-        self.epochs = hyperparameters[EPOCHS]
-        self.learning_rate = hyperparameters[LEARNING_RATE]
-        self.decay1, self.decay2 = hyperparameters[DECAY_1], hyperparameters[DECAY_2]
-        self.regularizer_name = hyperparameters[REGULARIZER_NAME]
-        self.regularizer_weight = hyperparameters[REGULARIZER_WEIGHT]
+    def get_kelpie_class():
+        return KelpieMultiClassNLLOptimizer
 
-        # build all the supported optimizers using the passed params (learning rate and decays if Adam)
-        supported_optimizers = {
-            "Adagrad": optim.Adagrad(
-                params=self.model.parameters(), lr=self.learning_rate
-            ),
-            "Adam": optim.Adam(
-                params=self.model.parameters(),
-                lr=self.learning_rate,
-                betas=(self.decay1, self.decay2),
-            ),
-            "SGD": optim.SGD(params=self.model.parameters(), lr=self.learning_rate),
-        }
-
-        # build all the supported regularizers using the passed regularizer_weight
-        supported_regularizers = {
-            "N3": N3(weight=self.regularizer_weight),
-            "N2": N2(weight=self.regularizer_weight),
-        }
-
-        # choose the Torch Optimizer object to use, based on the passed name
-        self.optimizer = supported_optimizers[self.optimizer_name]
-
-        # choose the regularizer
-        self.regularizer = supported_regularizers[self.regularizer_name]
+    def get_hyperparams_class():
+        return MultiClassNLLOptimizerHyperParams
 
     def train(
-        self,
-        training_triples: np.array,
-        save_path: str = None,
-        evaluate_every: int = -1,
-        valid_triples: np.array = None,
+        self, training_triples, save_path=None, eval_every=-1, valid_triples=None
     ):
-        # extract the direct and inverse train facts
-        all_training_triples = np.vstack(
-            (training_triples, self.model.dataset.invert_triples(training_triples))
-        )
+        inverse_triples = self.model.dataset.invert_triples(training_triples)
+        training_triples = np.vstack((training_triples, inverse_triples))
 
-        # batch size must be the minimum between the passed value and the number of Kelpie training facts
-        batch_size = min(self.batch_size, len(all_training_triples))
+        batch_size = min(self.batch_size, len(training_triples))
 
-        cur_loss = 0
-        for e in range(self.epochs):
-            cur_loss = self.epoch(batch_size, all_training_triples)
+        for e in tqdm(range(self.epochs)):
+            self.epoch(batch_size, training_triples)
 
-            if (
-                evaluate_every > 0
-                and valid_triples is not None
-                and (e + 1) % evaluate_every == 0
-            ):
-                mrr, h1, h10, mr = self.evaluator.evaluate(
-                    triples=valid_triples, write_output=False
-                )
+            is_eval_epoch = eval_every > 0 and (e + 1) % eval_every == 0
+            if valid_triples is not None and is_eval_epoch:
+                metrics = self.evaluator.evaluate(valid_triples, write_output=False)
 
-                print("\tValidation Hits@1: %f" % h1)
-                print("\tValidation Hits@10: %f" % h10)
-                print("\tValidation Mean Reciprocal Rank': %f" % mrr)
-                print("\tValidation Mean Rank': %f" % mr)
+                print(f"\tValidation Hits@1: {metrics['h1']}")
+                print(f"\tValidation Hits@10: {metrics['h10']}")
+                print(f"\tValidation Mean Reciprocal Rank: {metrics['mrr']}")
+                print(f"\tValidation Mean Rank: {metrics['mr']}")
 
                 if save_path is not None:
-                    print("\t saving model...")
+                    print("\tSaving model...")
                     torch.save(self.model.state_dict(), save_path)
-                print("\t done.")
 
         if save_path is not None:
-            print("\t saving model...")
+            print("\tSaving model...")
             torch.save(self.model.state_dict(), save_path)
-            print("\t done.")
 
-    def epoch(self, batch_size: int, training_triples: np.array):
+    def epoch(self, batch_size: int, training_triples):
         training_triples = torch.from_numpy(training_triples).cuda()
-
-        # at the beginning of the epoch, shuffle all triples randomly
-        actual_triples = training_triples[torch.randperm(training_triples.shape[0]), :]
+        perm = torch.randperm(training_triples.shape[0])
+        training_triples = training_triples[perm, :]
         loss = nn.CrossEntropyLoss(reduction="mean")
 
-        with tqdm.tqdm(
-            total=training_triples.shape[0], unit="ex", disable=not self.verbose
-        ) as bar:
-            bar.set_description("train loss")
+        num_triples = training_triples.shape[0]
+        with tqdm(
+            total=num_triples, unit="ex", disable=not self.verbose, leave=False
+        ) as p:
+            p.set_description("Train loss")
 
             batch_start = 0
-            while batch_start < training_triples.shape[0]:
-                batch_end = min(batch_start + batch_size, training_triples.shape[0])
-                batch = actual_triples[batch_start:batch_end].cuda()
+            while batch_start < num_triples:
+                batch_end = min(batch_start + batch_size, num_triples)
+                batch = training_triples[batch_start:batch_end].cuda()
                 l = self.step_on_batch(loss, batch)
 
                 batch_start += self.batch_size
-                bar.update(batch.shape[0])
-                bar.set_postfix(loss=f"{l.item():.2f}")
+
+                p.update(batch.shape[0])
+                p.set_postfix(loss=f"{l.item():.2f}")
 
     def step_on_batch(self, loss, batch):
         predictions, factors = self.model.forward(batch)
         truth = batch[:, 2]
 
-        # compute loss
         l_fit = loss(predictions, truth)
         l_reg = self.regularizer.forward(factors)
         l = l_fit + l_reg
 
-        # compute loss gradients, and run optimization step
         self.optimizer.zero_grad()
         l.backward()
         self.optimizer.step()
 
-        # return loss
         return l
 
 
 class KelpieMultiClassNLLOptimizer(MultiClassNLLOptimizer):
-    def __init__(self, model: KelpieModel, hyperparameters: dict, verbose: bool = True):
-        MultiClassNLLOptimizer.__init__(
-            self, model=model, hyperparameters=hyperparameters, verbose=verbose
-        )
+    def __init__(
+        self,
+        model: KelpieModel,
+        hp: MultiClassNLLOptimizerHyperParams,
+        verbose: bool = True,
+    ):
+        super().__init__(model=model, hp=hp, verbose=verbose)
 
-    def epoch(self, batch_size: int, training_triples: np.array):
-        training_triples = torch.from_numpy(training_triples).cuda()
-        # at the beginning of the epoch, shuffle all triples randomly
-        actual_triples = training_triples[torch.randperm(training_triples.shape[0]), :]
+    def epoch(self, batch_size: int, triples: np.array):
+        triples = torch.from_numpy(triples).cuda()
+        triples = triples[torch.randperm(triples.shape[0]), :]
         loss = nn.CrossEntropyLoss(reduction="mean")
 
-        with tqdm.tqdm(
-            total=training_triples.shape[0], unit="ex", disable=not self.verbose
-        ) as bar:
-            bar.set_description("train loss")
+        num_triples = triples.shape[0]
+        with tqdm(total=num_triples, unit="ex", disable=not self.verbose) as p:
+            p.set_description("Train loss")
 
             batch_start = 0
-            while batch_start < training_triples.shape[0]:
-                batch = actual_triples[batch_start : batch_start + batch_size].cuda()
+            while batch_start < triples.shape[0]:
+                batch = triples[batch_start : batch_start + batch_size].cuda()
                 l = self.step_on_batch(loss, batch)
 
-                # THIS IS THE ONE DIFFERENCE FROM THE ORIGINAL OPTIMIZER.
-                # THIS IS EXTREMELY IMPORTANT BECAUSE THIS WILL PROPAGATE THE UPDATES IN THE KELPIE ENTITY EMBEDDING
-                # TO THE MATRIX CONTAINING ALL THE EMBEDDINGS
                 self.model.update_embeddings()
 
                 batch_start += self.batch_size
-                bar.update(batch.shape[0])
-                bar.set_postfix(loss=f"{l.item():.2f}")
+                p.update(batch.shape[0])
+                p.set_postfix(loss=f"{l.item():.2f}")

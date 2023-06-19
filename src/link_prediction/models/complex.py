@@ -1,179 +1,65 @@
 import torch
-import numpy as np
 
-from typing import Tuple, Any
+from pydantic import BaseModel
 
 from torch.nn import Parameter
 
-from .model import Model, KelpieModel, DIMENSION, INIT_SCALE
-from ...data import Dataset, KelpieDataset
+from .model import Model, KelpieModel
+
+from ...data import KelpieDataset
+
+
+class ComplExHyperParams(BaseModel):
+    dimension: int
+    init_scale: float
 
 
 class ComplEx(Model):
-    """
-    The ComplEx class provides a Model implementation in PyTorch for the ComplEx system.
-    This implementation adheres to paper "Canonical Tensor Decomposition for Knowledge Base Completion",
-    and is largely inspired by the official implementation provided by the authors Lacroix, Usunier and Obozinski
-    at https://github.com/facebookresearch/kbc/tree/master/kbc.
-
-    In training or evaluation, our ComplEx class requires triples to be passed as 2-dimensional np.arrays.
-    Each row corresponds to a triple and contains the integer ids of its head, relation and tail.
-    Only *direct* triples should be passed to the model.
-
-    TODO: add documentation about inverse facts and relations
-    TODO: explain that the input must always be direct facts only
-    """
-
-    def __init__(self, dataset: Dataset, hyperparameters: dict, init_random=True):
-        """
-        Constructor for ComplEx model.
-
-        :param dataset: the Dataset on which to train and evaluate the model
-        :param hyperparameters: hyperparameters dictionary.
-                                Must contain at least DIMENSION and INIT_SCALE
-        """
-
-        # note: the init_random parameter is important because when initializing a KelpieComplEx,
-        #       self.entity_embeddings and self.relation_embeddings must not be initialized as Parameters!
-
-        # initialize this object both as a Model and as a nn.Module
-        Model.__init__(self, dataset)
+    def __init__(self, dataset, hp: ComplExHyperParams, init_random=True):
+        super().__init__(dataset)
 
         self.name = "ComplEx"
-        self.dataset = dataset
-        self.num_entities = dataset.num_entities  # number of entities in dataset
-        self.num_relations = 2 * dataset.num_relations  # number of relations in dataset
-        self.dimension = (
-            2 * hyperparameters[DIMENSION]
-        )  # embedding dimension; it is 2* the passed dimension because each element must have both a real and an imaginary value
-        self.real_dimension = hyperparameters[
-            DIMENSION
-        ]  # dimension of the real part of each embedding
+        self.num_entities = dataset.num_entities
+        self.num_relations = 2 * dataset.num_relations
+        self.dimension = 2 * hp.dimension
+        self.real_dimension = hp.dimension
+        self.init_scale = hp.init_scale
 
-        self.init_scale = hyperparameters[INIT_SCALE]
-
-        # create the embeddings for entities and relations as Parameters.
-        # We do not use the torch.Embeddings module here in order to keep the code uniform to the KelpieComplEx model,
-        # (on which torch.Embeddings can not be used as they do not allow the post-training mechanism).
-        # We have verified that this does not affect performances in any way.
-        # Each entity embedding and relation embedding is instantiated with size 2 * dimension because
-        # for each entity and relation we store real and imaginary parts as separate elements
         if init_random:
-            self.entity_embeddings = Parameter(
-                torch.rand(self.num_entities, self.dimension).cuda(), requires_grad=True
-            )
-            self.relation_embeddings = Parameter(
-                torch.rand(self.num_relations, self.dimension).cuda(),
-                requires_grad=True,
-            )
+            entity_embeddings = torch.rand(self.num_entities, self.dimension).cuda()
+            self.entity_embeddings = Parameter(entity_embeddings, requires_grad=True)
+            rel_embeddings = torch.rand(self.num_relations, self.dimension).cuda()
+            self.relation_embeddings = Parameter(rel_embeddings, requires_grad=True)
 
-            # initialization step to make the embedding values smaller in the embedding space
             with torch.no_grad():
                 self.entity_embeddings *= self.init_scale
                 self.relation_embeddings *= self.init_scale
 
     def is_minimizer(self):
-        """
-        This method specifies whether this model aims at minimizing of maximizing scores .
-        :return: True if in this model low scores are better than high scores; False otherwise.
-        """
         return False
 
-    def score(self, triples: np.array) -> np.array:
-        """
-        Compute scores for the passed triples
-        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
-        :return: a numpy array containing the scores of the passed triples
-        """
-        lhs = self.entity_embeddings[
-            triples[:, 0]
-        ]  # list of entity embeddings for the heads of the facts
-        rel = self.relation_embeddings[
-            triples[:, 1]
-        ]  # list of relation embeddings for the relations of the heads
-        rhs = self.entity_embeddings[
-            triples[:, 2]
-        ]  # list of entity embeddings for the tails of the facts
+    def score(self, triples):
+        lhs = self.entity_embeddings[triples[:, 0]]
+        rel = self.relation_embeddings[triples[:, 1]]
+        rhs = self.entity_embeddings[triples[:, 2]]
 
         return self.score_embeddings(lhs, rel, rhs).detach().cpu().numpy()
 
-    def score_embeddings(
-        self,
-        head_embeddings: torch.Tensor,
-        rel_embeddings: torch.Tensor,
-        tail_embeddings: torch.Tensor,
-    ):
-        """
-        Compute scores for the passed triples of head, relation and tail embeddings.
-        :param head_embeddings: a torch.Tensor containing the embeddings representing the head entities
-        :param rel_embeddings: a torch.Tensor containing the embeddings representing the relations
-        :param tail_embeddings: a torch.Tensor containing the embeddings representing the tail entities
+    def score_embeddings(self, lhs, rel, rhs):
+        lhs = (lhs[:, : self.real_dimension], lhs[:, self.real_dimension :])
+        rel = (rel[:, : self.real_dimension], rel[:, self.real_dimension :])
+        rhs = (rhs[:, : self.real_dimension], rhs[:, self.real_dimension :])
 
-        :return: a numpy array containing the scores computed for the passed triples of embeddings
-        """
+        real = (lhs[0] * rel[0] - lhs[1] * rel[1]) * rhs[0]
+        im = (lhs[0] * rel[1] + lhs[1] * rel[0]) * rhs[1]
+        score = real + im
 
-        # NOTE: this method is extremely important, because apart from being called by the ComplEx score(triples) method
-        # it is also used to perform several operations on gradients in our GradientEngine
-        # as well as the operations from the paper "Data Poisoning Attack against Knowledge Graph Embedding"
-        # that we use as a baseline and as a heuristic for our work.
+        return torch.sum(score, 1, keepdim=True)
 
-        # split the head embedding into real and imaginary components
-        lhs = (
-            head_embeddings[:, : self.real_dimension],
-            head_embeddings[:, self.real_dimension :],
-        )
-        # split the relation embedding into real and imaginary components
-        rel = (
-            rel_embeddings[:, : self.real_dimension],
-            rel_embeddings[:, self.real_dimension :],
-        )
-        # split the tail embedding into real and imaginary components
-        rhs = (
-            tail_embeddings[:, : self.real_dimension],
-            tail_embeddings[:, self.real_dimension :],
-        )
-
-        return torch.sum(
-            (lhs[0] * rel[0] - lhs[1] * rel[1]) * rhs[0]
-            + (lhs[0] * rel[1] + lhs[1] * rel[0]) * rhs[1],
-            1,
-            keepdim=True,
-        )
-
-    def all_scores(self, triples: np.array) -> np.array:
-        """
-        For each of the passed triples, compute scores for all possible tail entities.
-        :param triples: a 2-dimensional numpy array containing the triples to score, one per row
-        :return: a 2-dimensional numpy array that, for each triple, contains a row for each passed triple
-                 and a column for each possible tail
-        """
-
-        # for each fact <cur_head, cur_rel, cur_tail> to predict, get all (cur_head, cur_rel) couples
-        # and compute the scores using any possible entity as a tail
-        q = self._get_queries(triples)
-        rhs = self._get_rhs()
-        return (
-            q @ rhs
-        )  # 2d matrix: each row corresponds to a triple and has the scores for all entities
-
-    def forward(self, triples: np.array):
-        """
-        Perform forward propagation on the passed triples
-        :param triples: a 2-dimensional numpy array containing the triples to use in forward propagation, one per row
-        :return: a tuple containing
-                    - the scores for each passed triple with all possible tails
-                    - a partial result to use in regularization
-        """
-
-        lhs = self.entity_embeddings[
-            triples[:, 0]
-        ]  # list of entity embeddings for the heads of the facts
-        rel = self.relation_embeddings[
-            triples[:, 1]
-        ]  # list of relation embeddings for the relations of the heads
-        rhs = self.entity_embeddings[
-            triples[:, 2]
-        ]  # list of entity embeddings for the tails of the facts
+    def forward(self, triples):
+        lhs = self.entity_embeddings[triples[:, 0]]
+        rel = self.relation_embeddings[triples[:, 1]]
+        rhs = self.entity_embeddings[triples[:, 2]]
 
         lhs = lhs[:, : self.real_dimension], lhs[:, self.real_dimension :]
         rel = rel[:, : self.real_dimension], rel[:, self.real_dimension :]
@@ -185,347 +71,68 @@ class ComplEx(Model):
             to_score[:, self.real_dimension :],
         )
 
-        # this returns two factors
-        #   factor 1 is one matrix with the scores for the fact
-        #
-        #   factor 2 is 3 matrices that will then be used for regularization:
-        #           matrix 1: for each head entity get the real and imaginary component,
-        #                           square each of their elements
-        #                           sum the resulting vectors
-        #                           squareroot the elements of the resulting vector
-        #           matrix 2: for each relation get the real and imaginary component,
-        #                           square each of their elements
-        #                           sum the resulting vectors
-        #                           squareroot the elements of the resulting vector
-        #           matrix 3: for each tail entity get the real and imaginary component,
-        #                           square each of their elements
-        #                           sum the resulting vectors
-        #                           squareroot the elements of the resulting vector
-        return (
-            (lhs[0] * rel[0] - lhs[1] * rel[1]) @ to_score[0].transpose(0, 1)
-            + (lhs[0] * rel[1] + lhs[1] * rel[0]) @ to_score[1].transpose(0, 1)
-        ), (
+        real_product = lhs[0] * rel[0] - lhs[1] * rel[1]
+        imaginary_product = lhs[0] * rel[1] + lhs[1] * rel[0]
+        score_real = real_product @ to_score[0].transpose(0, 1)
+        score_imaginary = imaginary_product @ to_score[1].transpose(0, 1)
+        score = score_real + score_imaginary
+
+        reg_matrices = (
             torch.sqrt(lhs[0] ** 2 + lhs[1] ** 2),
             torch.sqrt(rel[0] ** 2 + rel[1] ** 2),
             torch.sqrt(rhs[0] ** 2 + rhs[1] ** 2),
         )
 
+        return (score, reg_matrices)
+
+    def all_scores(self, triples):
+        q = self._get_queries(triples)
+        rhs = self._get_rhs()
+        return q @ rhs
+
     def _get_rhs(self):
-        """
-        This private method computes, for each fact to score,
-        a partial factor of the score that only depends on the tail of the fact.
-        In our scenario, this actually just corresponds to the transposed embeddings of all entities.
+        rhs = self.entity_embeddings.transpose(0, 1)
+        return rhs.detach()
 
-        Note: This method is used in conjunction with _get_queries
-        to obtain very efficiently, for each test fact, the score for each possible tail:
-            scores = output of _get_queries @ output of _get_rhs
+    def _get_queries(self, triples):
+        lhs = self.entity_embeddings[triples[:, 0]]
+        rel = self.relation_embeddings[triples[:, 1]]
 
-        :return: a torch.Tensor containing the embeddings of all entities (one per column)
-        """
-        return (
-            self.entity_embeddings[: self.dataset.num_entities].transpose(0, 1).detach()
-        )
+        lhs = (lhs[:, : self.real_dimension], lhs[:, self.real_dimension :])
+        rel = (rel[:, : self.real_dimension], rel[:, self.real_dimension :])
 
-    def _get_queries(self, triples: np.array):
-        """
-        This private method computes, for each fact to score,
-        the partial factor of the score that only depends on the head and relation of the fact
+        real = lhs[0] * rel[0] - lhs[1] * rel[1]
+        im = lhs[0] * rel[1] + lhs[1] * rel[0]
 
-        Note: This method is used in conjunction with _get_rhs
-        to obtain very efficiently, for each test fact, the score for each possible tail:
-                scores = output of get_queries @ output of get_rhs
+        return torch.cat([real, im], 1)
 
-        :param triples: the facts to compute the partial factors for, as a np.array
-        :return: a torch.Tensor with, in each row, the partial score factor of the head and relation for one fact
-        """
-
-        # get the embeddings for head and relation of each fact
-        head_embeddings = self.entity_embeddings[triples[:, 0]]
-        relation_embeddings = self.relation_embeddings[triples[:, 1]]
-
-        # split both head embeddings and relation embeddings into real and imaginary parts
-        head_embeddings = (
-            head_embeddings[:, : self.real_dimension],
-            head_embeddings[:, self.real_dimension :],
-        )
-        relation_embeddings = (
-            relation_embeddings[:, : self.real_dimension],
-            relation_embeddings[:, self.real_dimension :],
-        )
-
-        # obtain a tensor that, in each row, has the partial score factor of the head and relation for one fact
-        return torch.cat(
-            [
-                head_embeddings[0] * relation_embeddings[0]
-                - head_embeddings[1] * relation_embeddings[1],
-                head_embeddings[0] * relation_embeddings[1]
-                + head_embeddings[1] * relation_embeddings[0],
-            ],
-            1,
-        )
-
-    def predict_triples(self, triples: np.array) -> Tuple[Any, Any, Any]:
-        """
-        This method takes as an input a tensor of 'direct' triples,
-        runs head and tail prediction on each of them
-        and returns
-            - the obtained scores for direct and inverse version of each triple,
-            - the obtained head and tail ranks for each triple
-            - the list of predicted entities for each triple
-        :param triples: a torch.Tensor containing all the DIRECT triples to predict.
-                        They will be automatically inverted to perform head prediction
-
-        :return: three dicts mapping each passed direct triple (in Tuple format) respectively to
-                    - the scores of that direct triple and of the corresponding inverse triple;
-                    - the head and tail rank for that triple;
-                    - the head and tail predictions for that triple
-        """
-
-        direct_triples = triples
-
-        # make sure that all the passed triples are "direct" triples
-        assert np.all(direct_triples[:, 1] < self.dataset.num_relations)
-
-        # output data structures
-        scores, ranks, predictions = [], [], []
-
-        # invert triples to perform head predictions
-        inverse_triples = self.dataset.invert_triples(direct_triples)
-
-        # obtain scores, ranks and predictions both for direct and inverse triples
-        direct_scores, tail_ranks, tail_preds = self.predict_tails(direct_triples)
-        inverse_scores, head_ranks, head_preds = self.predict_tails(inverse_triples)
-
-        for i in range(direct_triples.shape[0]):
-            scores.append({"tail": direct_scores[i], "head": inverse_scores[i]})
-            ranks.append({"tail": int(tail_ranks[i]), "head": int(head_ranks[i])})
-            predictions.append({"tail": tail_preds[i], "head": head_preds[i]})
-
-        return [
-            {"score": score, "rank": rank, "prediction": prediction}
-            for score, rank, prediction in zip(scores, ranks, predictions)
-        ]
-
-    def predict_tails(self, triples: np.array) -> Tuple[Any, Any, Any]:
-        """
-        Returns filtered scores, ranks and predicted entities for each passed fact.
-        :param triples: a torch.LongTensor of triples (head, relation, tail).
-                      The triples can also be "inverse triples" with (tail, inverse_relation_id, head)
-        :return:
-        """
-
-        ranks = torch.ones(len(triples))  # initialize with ONES
-
-        with torch.no_grad():
-            # compute scores for each triple for all possible tails
-            all_scores = self.all_scores(triples)
-
-            # from the obtained scores, extract the the scores of the actual facts <cur_head, cur_rel, cur_tail>
-            targets = torch.zeros(size=(len(triples), 1)).cuda()
-            for i, (_, _, tail_id) in enumerate(triples):
-                targets[i, 0] = all_scores[i, tail_id].item()
-
-            # set to -1e6 the scores obtained using tail entities that must be filtered out (filtered scenario)
-            # In this way, those entities will be ignored in rankings
-            for i, (head_id, rel_id, tail_id) in enumerate(triples):
-                # get the list of tails to filter out; include the actual target tail entity too
-                filter_out = self.dataset.to_filter[(head_id, rel_id)]
-
-                if tail_id not in filter_out:
-                    filter_out.append(tail_id)
-
-                all_scores[i, torch.LongTensor(filter_out)] = -1e6
-
-            # fill the ranks data structure and convert it to a Python list
-            ranks += torch.sum(
-                (all_scores >= targets).float(), dim=1
-            ).cpu()  # ranks was initialized with ONES
-            ranks = ranks.cpu().numpy().tolist()
-
-            all_scores = all_scores.cpu().numpy()
-            targets = targets.cpu().numpy()
-
-            # save the list of all obtained scores
-            scores = [targets[i, 0] for i in range(len(triples))]
-
-            predictions = []
-            for i, (head_id, rel_id, tail_id) in enumerate(triples):
-                filter_out = self.dataset.to_filter[(head_id, rel_id)]
-                if tail_id not in filter_out:
-                    filter_out.append(tail_id)
-
-                predicted_tails = np.where(all_scores[i] > -1e6)[0]
-
-                # get all not filtered tails and corresponding scores for current fact
-                # predicted_tails = np.where(all_scores[i] != -1e6)
-                predicted_tails_scores = all_scores[
-                    i, predicted_tails
-                ]  # for cur_tail in predicted_tails]
-
-                # note: the target tail score and the tail id are in the same position in their respective lists!
-                # predicted_tails_scores = np.append(predicted_tails_scores, scores[i])
-                # predicted_tails = np.append(predicted_tails, [tail_id])
-
-                # sort the scores and predicted tails list in the same way
-                permutation = np.argsort(-predicted_tails_scores)
-
-                predicted_tails_scores = predicted_tails_scores[permutation]
-                predicted_tails = predicted_tails[permutation]
-
-                # include the score of the target tail in the predictions list
-                # after ALL entities with greater or equal scores (MIN policy)
-                j = 0
-                while (
-                    j < len(predicted_tails_scores)
-                    and predicted_tails_scores[j] >= scores[i]
-                ):
-                    j += 1
-
-                predicted_tails_scores = np.concatenate(
-                    (
-                        predicted_tails_scores[:j],
-                        np.array([scores[i]]),
-                        predicted_tails_scores[j:],
-                    )
-                )
-                predicted_tails = np.concatenate(
-                    (predicted_tails[:j], np.array([tail_id]), predicted_tails[j:])
-                )
-
-                # add to the results data structure
-                predictions.append(predicted_tails)  # as a np array!
-
-        return scores, ranks, predictions
-
-    def criage_first_step(self, triples: np.array):
+    def criage_first_step(self, triples):
         return self._get_queries(triples)
 
-    def criage_last_step(self, x: torch.Tensor, tail_embeddings: torch.Tensor):
-        return x @ tail_embeddings
+    def criage_last_step(self, x: torch.Tensor, rhs: torch.Tensor):
+        return x @ rhs
 
     def kelpie_model_class(self):
         return KelpieComplEx
 
+    def get_hyperparams_class():
+        return ComplExHyperParams
 
-################
 
+class KelpieComplEx(KelpieModel):
+    def __init__(self, dataset: KelpieDataset, model: ComplEx, init_tensor):
+        frozen_entity_embs = model.entity_embeddings.clone().detach()
+        frozen_relation_embs = model.relation_embeddings.clone().detach()
+        dimension = model.real_dimension
+        init_scale = model.init_scale
+        hp = ComplExHyperParams(dimension=dimension, init_scale=init_scale)
+        self.model = ComplEx(dataset, hp, init_random=False)
+        self.original_entity = dataset.original_entity
+        self.kelpie_entity = dataset.kelpie_entity
 
-class KelpieComplEx(KelpieModel, ComplEx):
-    def __init__(self, dataset: KelpieDataset, model: ComplEx, init_tensor=None):
-        ComplEx.__init__(
-            self,
-            dataset=dataset,
-            hyperparameters={
-                DIMENSION: model.real_dimension,
-                INIT_SCALE: model.init_scale,
-            },
-            init_random=False,
-        )
-
-        self.model = model
-        self.original_entity_id = dataset.original_entity_id
-        self.kelpie_entity_id = dataset.kelpie_entity_id
-
-        # extract the values of the trained embeddings for entities and relations and freeze them.
-        frozen_entity_embeddings = model.entity_embeddings.clone().detach()
-        frozen_relation_embeddings = model.relation_embeddings.clone().detach()
-
-        # the tensor from which to initialize the kelpie_entity_embedding;
-        # if it is None it is initialized randomly
-        if init_tensor is None:
-            init_tensor = torch.rand(1, self.dimension)
-
-        # It is *extremely* important that kelpie_entity_embedding is both a Parameter and an instance variable
-        # because the whole approach of the project is to obtain the parameters model params with parameters() method
-        # and to pass them to the Optimizer for optimization.
-        #
-        # If I used .cuda() outside the Parameter, like
-        #       self.kelpie_entity_embedding = Parameter(torch.rand(1, self.dimension), requires_grad=True).cuda()
-        # IT WOULD NOT WORK because cuda() returns a Tensor, not a Parameter.
-
-        # Therefore kelpie_entity_embedding would not be a Parameter anymore.
-        self.kelpie_entity_embedding = Parameter(init_tensor.cuda(), requires_grad=True)
-
-        with torch.no_grad():  # Initialize as any other embedding
-            self.kelpie_entity_embedding *= self.init_scale
-
-        self.relation_embeddings = frozen_relation_embeddings
-        self.entity_embeddings = torch.cat(
-            [frozen_entity_embeddings, self.kelpie_entity_embedding], 0
-        )
-
-    # Override
-    def predict_triples(self, triples: np.array, original_mode: bool = False):
-        """
-        This method overrides the Model predict_triples method
-        by adding the possibility to run predictions in original_mode,
-        which means ignoring in any circumstances the additional "fake" kelpie entity.
-
-        :param triples: the DIRECT triples. Will be inverted to perform head prediction
-        :param original_mode:
-
-        :return:
-        """
-
-        direct_triples = triples
-
-        # assert all triples are direct
-        assert (triples[:, 1] < self.dataset.num_relations).all()
-
-        # if we are in original_mode, make sure that the kelpie entity is not featured in the triples to predict
-        # otherwise, make sure that the original entity is not featured in the triples to predict
-        forbidden_entity_id = (
-            self.kelpie_entity_id if original_mode else self.original_entity_id
-        )
-        assert np.isin(forbidden_entity_id, direct_triples[:][0, 2]) == False
-
-        # use the Model implementation method to obtain scores, ranks and prediction results.
-        # these WILL feature the forbidden entity, so we now need to filter them
-        scores, ranks, predictions = ComplEx.predict_triples(self, direct_triples)
-
-        # remove any reference to the forbidden entity id
-        # (that may have been included in the predicted entities)
-        for i in range(len(direct_triples)):
-            head_predictions, tail_predictions = predictions[i]
-            head_rank, tail_rank = ranks[i]
-
-            # remove the forbidden entity id from the head predictions (note: it could be absent due to filtering)
-            # and if it was before the head target decrease the head rank by 1
-            forbidden_indices = np.where(head_predictions == forbidden_entity_id)[0]
-            if len(forbidden_indices) > 0:
-                index = forbidden_indices[0]
-                head_predictions = np.concatenate(
-                    [head_predictions[:index], head_predictions[index + 1 :]], axis=0
-                )
-                if index < head_rank:
-                    head_rank -= 1
-
-            # remove the kelpie entity id from the tail predictions  (note: it could be absent due to filtering)
-            # and if it was before the tail target decrease the head rank by 1
-            forbidden_indices = np.where(tail_predictions == forbidden_entity_id)[0]
-            if len(forbidden_indices) > 0:
-                index = forbidden_indices[0]
-                tail_predictions = np.concatenate(
-                    [tail_predictions[:index], tail_predictions[index + 1 :]], axis=0
-                )
-                if index < tail_rank:
-                    tail_rank -= 1
-
-            predictions[i] = (head_predictions, tail_predictions)
-            ranks[i] = (head_rank, tail_rank)
-
-        return scores, ranks, predictions
-
-    # Override
-    def predict_triple(self, triple: np.array, original_mode: bool = False):
-        """
-        Override the
-        :param triple: the DIRECT triple. Will be inverted to perform head prediction
-        :param original_mode:
-        :return:
-        """
-
-        assert triple[1] < self.dataset.num_relations
-
-        [result] = self.predict_triples(np.array([triple]), original_mode)
-        return result["score"], result["rank"], result["prediction"]
+        self.kelpie_entity_emb = Parameter(init_tensor.cuda(), requires_grad=True)
+        with torch.no_grad():
+            self.kelpie_entity_emb *= self.model.init_scale
+        entity_embs = torch.cat([frozen_entity_embs, self.kelpie_entity_emb], 0)
+        self.model.entity_embeddings = entity_embs
+        self.model.relation_embeddings = frozen_relation_embs

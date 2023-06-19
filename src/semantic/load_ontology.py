@@ -25,12 +25,12 @@ entities = pd.read_csv(
 
 
 def load_triple(triple):
-    head, relation, tail = dataset.labels_triple(triple)
-    if head in entity_names and tail in entity_names:
+    s, p, o = dataset.labels_triple(triple)
+    if s in entity_names and o in entity_names:
         with dbr:
-            value = dbr[head].__dict__.get(relation, [])
-            value.append(dbr[tail])
-            dbr[head].__class__(head, **{relation: value})
+            value = dbr[s].__dict__.get(p, [])
+            value.append(dbr[o])
+            dbr[s].__class__(s, **{p: value})
 
 
 def check_disjoint_classes(classes):

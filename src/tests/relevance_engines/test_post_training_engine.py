@@ -1,55 +1,39 @@
 import pytest
-import numpy as np
 
 from src.tests.relevance_engines.fixtures import *
 
-from src.relevance_engines import PostTrainingEngine
+from src.relevance_engines import (
+    NecessaryPostTrainingEngine,
+    SufficientPostTrainingEngine,
+)
 
 
 @pytest.fixture
-def post_training_engine(dataset, model, hyperparameters):
-    return PostTrainingEngine(
-        model=model, dataset=dataset, hyperparameters=hyperparameters
-    )
+def necessary_engine(dataset, model, training_params):
+    engine = NecessaryPostTrainingEngine(model, dataset, training_params)
+    engine.set_cache()
+
+    return engine
 
 
-def test_removal_relevance(
-    post_training_engine,
-    triple_to_explain,
-    highest_relevance_triple,
-    lowest_relevance_triple,
-):
-    hr_fake_triples_relevance = post_training_engine.removal_relevance(
-        triple_to_explain=triple_to_explain,
-        triples_to_remove=np.array([highest_relevance_triple]),
-        perspective="head",
-    )[0]
+@pytest.fixture
+def sufficient_engine(dataset, model, training_params):
+    engine = SufficientPostTrainingEngine(model, dataset, training_params)
+    engine.set_cache()
 
-    lr_fake_triple_relevance = post_training_engine.removal_relevance(
-        triple_to_explain=triple_to_explain,
-        triples_to_remove=np.array([lowest_relevance_triple]),
-        perspective="head",
-    )[0]
-
-    assert hr_fake_triples_relevance > lr_fake_triple_relevance
+    return engine
 
 
-def test_addition_relevance(
-    post_training_engine,
-    triple_to_explain,
-    highest_relevance_triple,
-    lowest_relevance_triple,
-):
-    hr_fake_triples_relevance = post_training_engine.addition_relevance(
-        triple_to_convert=triple_to_explain,
-        triples_to_add=np.array([highest_relevance_triple]),
-        perspective="head",
-    )[0]
+def test_necessary_relevance(necessary_engine, pred, best_triple, worst_triple):
+    hr = necessary_engine.compute_relevance(pred, [best_triple])
+    lr = necessary_engine.compute_relevance(pred, [worst_triple])
 
-    lr_fake_triple_relevance = post_training_engine.addition_relevance(
-        triple_to_convert=triple_to_explain,
-        triples_to_add=np.array([lowest_relevance_triple]),
-        perspective="head",
-    )[0]
+    assert hr > lr
 
-    assert hr_fake_triples_relevance > lr_fake_triple_relevance
+
+def test_sufficient_relevance(sufficient_engine, pred, best_triple, worst_triple):
+    sufficient_engine.select_entities_to_convert(pred, 10)
+    hr = sufficient_engine.compute_relevance(pred, [best_triple])
+    lr = sufficient_engine.compute_relevance(pred, [worst_triple])
+
+    assert hr > lr

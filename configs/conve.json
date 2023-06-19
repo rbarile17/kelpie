@@ -1,0 +1,17 @@
+{
+    "model": "ConvE",
+    "model_params": {
+        "dimension": 200,
+        "input_dropout_rate": 0.2,
+        "hidden_dropout_rate": 0.3,
+        "feature_map_dropout_rate": 0.2,
+        "hidden_layer_size": 9728
+    },
+    "training": {
+        "batch_size": 128,
+        "label_smoothing": 0.1,
+        "lr": 0.003,
+        "decay": 0.995,
+        "epochs": 60
+    }
+}

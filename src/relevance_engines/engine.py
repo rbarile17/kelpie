@@ -1,52 +1,28 @@
-import itertools
 import random
 import numpy
 import torch
 
-from typing import Tuple, Any
+from collections import defaultdict
 
 from ..data import Dataset, ONE_TO_ONE, MANY_TO_ONE
-from ..link_prediction.models import Model, TransE
+from ..link_prediction.models import Model
 
 
-class ExplanationEngine:
-    def __init__(self, model: Model, dataset: Dataset, hyperparameters: dict):
+class RelevanceEngine:
+    def __init__(self, model: Model, dataset: Dataset):
         self.model = model
-        self.model.to("cuda")
-        self.model.eval()
         self.dataset = dataset
-        self.hyperparameters = hyperparameters
 
-    def simple_removal_explanations(
-        self, triple_to_explain: Tuple[Any, Any, Any], perspective: str, top_k: int
-    ):
-        pass
+        self.o_to_training_triples = defaultdict(list)
+        for h, r, t in dataset.training_triples:
+            self.o_to_training_triples[t].append((h, r, t))
 
-    def simple_addition_explanations(
-        self,
-        triple_to_explain: Tuple[Any, Any, Any],
-        perspective: str,
-        triples_to_add: list,
-    ):
-        pass
-
-    def _extract_triple_nples(self, triples: list, n: int):
-        return list(itertools.combinations(triples, n))
-
-    def extract_entities_for(
-        self,
-        model: Model,
-        dataset: Dataset,
-        triple: numpy.array,
-        perspective: str,
-        k: int,
-        degree_cap=-1,
-    ):
+    def select_entities_to_convert(self, pred, k: int, degree_cap=None, criage=False):
         """
-        Extract k entities to replace the perspective entity in the passed triple.
+        Extract k entities to replace the head in the passed triple.
 
         The purpose of such entities is to allow the engine to identify sufficient rules to explain the triple.
-        To do so, the engine replaces the perspective entity in the triple with the extracted entities,
+        To do so, the engine replaces the head in the triple with the extracted entities,
         and the engine analyzes the effect of adding/removing fact featuring those entities.
 
         The whole system works assuming that the extracted entities, when put in the passed triple,
@@ -54,20 +30,20 @@ class ExplanationEngine:
         the purpose of the engine is identify the minimal combination of facts to added to those entities
         in order to "fool" the model and make it predict those "wrong" facts as true.
 
-        As a consequence the extracted entities will adhere to the following criteria:
-            - must be different from the perspective entity of the triple to explain (obviously)
-            - it must be seen in training (obviously)
-            - the extracted entity must form a "true" fact when put in the triple.
+        As a consequence each extracted entities will adhere to the following criteria:
+            - must be different from the head of the prediciton
+            - must be seen in training
+            - must form a "true" fact when put in the triple
               E.g., Michelle can not be a good replacement for Barack in <Barack, parent, Natasha>
               if <Michelle, parent, Natasha> is already present in the dataset (in train, valid or test set)
             - if the relation in the triple has *_TO_ONE type, the extracted entities must not already have
-              a known tail for the relation under analysis in the training set.
-              (e.g when explaining <Barack, nationality, USA> we can not use entity "Vladimir" to replace Barack
-              if <Vladimir, nationality, Russia> is either in train, valid or test set).
-            - the extracted entity must not form a "true" fact when put in the triple.
-              E.g., Michelle can not be a good replacement for Barack in <Barack, parent, Natasha>
-              if <Michelle, parent, Natasha> is already present in the dataset (in train, valid or test set)
-            - the extracted entity must not form a fact that is predicted by the model.
+              a known tail for the relation under analysis in the training set
+              e.g., when explaining <Barack, nationality, USA> we can not use entity "Vladimir" to replace Barack
+              if <Vladimir, nationality, Russia> is in the dataset
+            - must not form a "true" fact when put in the triple.
+              e.g., Michelle can not be a good replacement for Barack in <Barack, parent, Natasha>
+              if <Michelle, parent, Natasha> is in the dataset
+            - must not form a fact that is predicted by the model.
               (we want current_other_entities that, without additions, do not predict the target entity with rank 1)
               (e.g. if we are explaining <Barack, nationality, USA>, George is an acceptable "convertible entity"
               only if <George, nationality, ?> does not already rank USA in 1st position!)
@@ -75,133 +51,73 @@ class ExplanationEngine:
         :param model: the model the prediction of which must be explained
         :param dataset: the dataset on which the passed model has been trained
         :param triple: the triple that the engine is trying to explain
-        :param perspective: the perspective from which to explain the passed triple: either "head" or "tail".
         :param k: the number of entities to extract
         :param degree_cap:
         :return:
         """
 
-        # this is EXTREMELY important in models with dropout and/or batch normalization.
-        # It basically disables dropout, and tells batch_norm layers to use saved statistics instead of batch data.
-        # (This affects both the computed scores and the computed gradients, so it is vital)
-        model.eval()
+        # important in models with dropout and/or batch normalization
+        self.model.eval()
 
-        # disable backprop for all the following operations: hopefully this should make them faster
-        with torch.no_grad():
-            head_to_explain, relation_to_explain, tail_to_explain = triple
-            entity_to_explain, target_entity = (
-                (relation_to_explain, tail_to_explain)
-                if perspective == "head"
-                else (tail_to_explain, head_to_explain)
-            )
+        s, p, o = pred
+        perspective_entity = p
 
-            overall_candidate_entities = []
+        overall_entities = []
 
-            if perspective == "head":
-                step_1_candidate_entities = []
-                step_1_triples = []
-                for cur_entity in range(0, dataset.num_entities):
-                    # do not include the entity to explain, of course
-                    if cur_entity == entity_to_explain:
-                        continue
+        entities = []
+        for entity in range(self.dataset.num_entities):
+            if entity == perspective_entity:
+                continue
+            if self.dataset.entity_to_degree[entity] < 1:
+                continue
+            if degree_cap and self.dataset.entity_to_degree[entity] > degree_cap:
+                continue
 
-                    # if the entity only appears in validation/testing (so its training degree is 0) skip it
-                    if dataset.entity_to_degree[cur_entity] < 1:
-                        continue
+            if criage and entity not in self.o_to_training_triples:
+                continue
 
-                    # if the training degree exceeds the cap, skip the entity
-                    if (
-                        degree_cap != -1
-                        and dataset.entity_to_degree[cur_entity] > degree_cap
-                    ):
-                        continue
+            if (entity, p) in self.dataset.to_filter:
+                if self.dataset.relation_to_type[p] in [ONE_TO_ONE, MANY_TO_ONE]:
+                    continue
 
-                    # if any facts <cur_entity, relation, *> are in the dataset:
-                    if (cur_entity, relation_to_explain) in dataset.to_filter:
-                        ## if the relation is *_TO_ONE, ignore any entities for which in train/valid/test,
-                        if dataset.relation_to_type[relation_to_explain] in [
-                            ONE_TO_ONE,
-                            MANY_TO_ONE,
-                        ]:
-                            continue
+                if o in self.dataset.to_filter[(entity, p)]:
+                    continue
 
-                        ## if <cur_entity, relation, tail> is in the dataset, ignore this entity
-                        if (
-                            tail_to_explain
-                            in dataset.to_filter[(cur_entity, relation_to_explain)]
-                        ):
-                            continue
+            entities.append(entity)
 
-                    step_1_candidate_entities.append(cur_entity)
-                    step_1_triples.append(
-                        (cur_entity, relation_to_explain, tail_to_explain)
-                    )
+        if len(entities) == 0:
+            return []
+        triples = [(entity, p, o) for entity in entities]
 
-                if len(step_1_candidate_entities) == 0:
-                    return []
+        batch_size = 500
+        batches_scores = []
+        batch_start = 0
+        while batch_start < len(triples):
+            batch_end = min(len(triples), batch_start + batch_size)
+            batch = triples[batch_start:batch_end]
+            batch_scores = self.model.all_scores(triples=numpy.array(batch))
+            batch_scores = batch_scores.detach().cpu().numpy()
+            batches_scores.append(batch_scores)
+            batch_start += batch_size
+        scores = numpy.vstack(batches_scores)
 
-                batch_size = 500
+        for i in range(len(entities)):
+            entity = entities[i]
+            cur_s, cur_p, cur_o = triples[i]
+            triple_scores = scores[i]
 
-                # if isinstance(model, TransE) and dataset.name == "YAGO3-10":
-                #     batch_size = 100
-                batch_scores_array = []
-                batch_start = 0
-                while batch_start < len(step_1_triples):
-                    cur_batch = step_1_triples[
-                        batch_start : min(len(step_1_triples), batch_start + batch_size)
-                    ]
-                    cur_batch_all_scores = (
-                        model.all_scores(triples=numpy.array(cur_batch))
-                        .detach()
-                        .cpu()
-                        .numpy()
-                    )
-                    batch_scores_array.append(cur_batch_all_scores)
-                    batch_start += batch_size
-                triples_all_scores = numpy.vstack(batch_scores_array)
+            filter_out = self.dataset.to_filter.get((cur_s, cur_p), [])
+            filter_out = torch.LongTensor(filter_out)
 
-                # else:
-                #    triples_all_scores = model.all_scores(triples=numpy.array(step_1_triples)).detach().cpu().numpy()
-
-                for i in range(len(step_1_candidate_entities)):
-                    cur_candidate_entity = step_1_candidate_entities[i]
-                    cur_head, cur_rel, cur_tail = step_1_triples[i]
-                    cur_triple_all_scores = triples_all_scores[i]
-
-                    filter_out = (
-                        dataset.to_filter[(cur_head, cur_rel)]
-                        if (cur_head, cur_rel) in dataset.to_filter
-                        else []
-                    )
-
-                    if model.is_minimizer():
-                        cur_triple_all_scores[torch.LongTensor(filter_out)] = 1e6
-                        cur_triple_target_score_filtered = cur_triple_all_scores[
-                            cur_tail
-                        ]
-                        if (
-                            1e6
-                            > cur_triple_target_score_filtered
-                            > numpy.min(cur_triple_all_scores)
-                        ):
-                            overall_candidate_entities.append(cur_candidate_entity)
-                    else:
-                        cur_triple_all_scores[torch.LongTensor(filter_out)] = -1e6
-                        cur_triple_target_score_filtered = cur_triple_all_scores[
-                            cur_tail
-                        ]
-                        if (
-                            -1e6
-                            < cur_triple_target_score_filtered
-                            < numpy.max(cur_triple_all_scores)
-                        ):
-                            overall_candidate_entities.append(cur_candidate_entity)
-
+            target_score = triple_scores[cur_o]
+            if self.model.is_minimizer():
+                triple_scores[filter_out] = 1e6
+                if 1e6 > target_score > numpy.min(triple_scores):
+                    overall_entities.append(entity)
             else:
-                # todo: this is currently not allowed because we would need to collect (head, relation, entity) for all other entities
-                # todo: add an optional boolean "head_prediction" (default=False); if it is true, compute scores for all heads rather than tails
-                raise NotImplementedError
+                triple_scores[filter_out] = -1e6
+                if -1e6 < target_score < numpy.max(triple_scores):
+                    overall_entities.append(entity)
 
-        return random.sample(
-            overall_candidate_entities, k=min(k, len(overall_candidate_entities))
-        )
+        entities = random.sample(overall_entities, k=min(k, len(overall_entities)))
+        self.entities_to_convert = entities

@@ -13,7 +13,7 @@ from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
 
 class Dataset:
     def __init__(self, dataset: str):
-        self.dataset_name = dataset
+        self.name = dataset
         if dataset == "DBpedia50":
             self.dataset = get_dataset(
                 training=DBPEDIA50_PATH / "train.txt",
@@ -53,15 +53,15 @@ class Dataset:
         self.entity_to_training_triples = defaultdict(list)
         self.entity_to_validation_triples = defaultdict(list)
         self.entity_to_testing_triples = defaultdict(list)
-        for head, relation, tail in self.training_triples:
-            self.entity_to_training_triples[head].append((head, relation, tail))
-            self.entity_to_training_triples[tail].append((head, relation, tail))
-        for head, relation, tail in self.validation_triples:
-            self.entity_to_validation_triples[head].append((head, relation, tail))
-            self.entity_to_validation_triples[tail].append((head, relation, tail))
-        for head, relation, tail in self.testing_triples:
-            self.entity_to_testing_triples[head].append((head, relation, tail))
-            self.entity_to_testing_triples[tail].append((head, relation, tail))
+        for s, p, o in self.training_triples:
+            self.entity_to_training_triples[s].append((s, p, o))
+            self.entity_to_training_triples[o].append((s, p, o))
+        for s, p, o in self.validation_triples:
+            self.entity_to_validation_triples[s].append((s, p, o))
+            self.entity_to_validation_triples[o].append((s, p, o))
+        for s, p, o in self.testing_triples:
+            self.entity_to_testing_triples[s].append((s, p, o))
+            self.entity_to_testing_triples[o].append((s, p, o))
 
         for entity in self.entity_to_training_triples:
             self.entity_to_training_triples[entity] = list(
@@ -81,14 +81,14 @@ class Dataset:
         }
 
         self.train_to_filter = defaultdict(list)
-        for head, relation, tail in self.training_triples:
-            self.train_to_filter[(head, relation)].append(tail)
-            self.train_to_filter[(tail, relation + self.num_relations)].append(head)
+        for s, p, o in self.training_triples:
+            self.train_to_filter[(s, p)].append(o)
+            self.train_to_filter[(o, p + self.num_relations)].append(s)
 
         self.to_filter = defaultdict(list)
-        for head, relation, tail in self.all_triples:
-            self.to_filter[(head, relation)].append(tail)
-            self.to_filter[(tail, relation + self.num_relations)].append(head)
+        for s, p, o in self.all_triples:
+            self.to_filter[(s, p)].append(o)
+            self.to_filter[(o, p + self.num_relations)].append(s)
 
         self._compute_relation_to_type()
 
@@ -142,60 +142,58 @@ class Dataset:
         return self.dataset.__iter__()
 
     def labels_triple(self, ids_triple):
-        h, r, t = ids_triple
-        return (self.id_to_entity[h], self.id_to_relation[r], self.id_to_entity[t])
+        s, p, o = ids_triple
+        return (self.id_to_entity[s], self.id_to_relation[p], self.id_to_entity[o])
 
     def labels_triples(self, ids_triples):
         return [self.labels_triple(ids_triple) for ids_triple in ids_triples]
 
     def ids_triple(self, labels_triple):
-        h, r, t = labels_triple
-        return (self.entity_to_id[h], self.relation_to_id[r], self.entity_to_id[t])
+        s, p, o = labels_triple
+        return (self.entity_to_id[s], self.relation_to_id[p], self.entity_to_id[o])
 
     def ids_triples(self, labels_triples):
         return [self.ids_triple(labels_triple) for labels_triple in labels_triples]
 
     def printable_triple(self, triple):
-        h, r, t = self.labels_triple(triple)
-        return f"<{h}, {r}, {t}>"
+        s, p, o = self.labels_triple(triple)
+        return f"<{s}, {p}, {o}>"
 
     def add_training_triple(self, triple):
-        head, relation, tail = triple
+        s, p, o = triple
+
         self.dataset.training.mapped_triples = torch.cat(
-            [
-                self.dataset.training.mapped_triples,
-                torch.tensor([[head, relation, tail]]),
-            ],
+            [self.dataset.training.mapped_triples, torch.tensor([[s, p, o]])],
             dim=0,
         )
-        self.entity_to_training_triples[head].append(triple)
-        self.entity_to_training_triples[tail].append(triple)
-        self.entity_to_degree[head] += 1
-        self.entity_to_degree[tail] += 1
-        self.to_filter[(head, relation)].append(tail)
-        self.train_to_filter[(head, relation)].append(tail)
+        self.entity_to_training_triples[s].append(triple)
+        self.entity_to_training_triples[o].append(triple)
+        self.entity_to_degree[s] += 1
+        self.entity_to_degree[o] += 1
+        self.to_filter[(s, p)].append(o)
+        self.train_to_filter[(s, p)].append(o)
 
     def add_training_triples(self, triples):
         for triple in triples:
             self.add_training_triple(triple)
 
     def remove_training_triple(self, triple):
-        head, relation, tail = triple
+        s, p, o = triple
         self.dataset.training.mapped_triples = self.dataset.training.mapped_triples[
             ~(
-                (self.dataset.training.mapped_triples[:, 0] == head)
-                & (self.dataset.training.mapped_triples[:, 1] == relation)
-                & (self.dataset.training.mapped_triples[:, 2] == tail)
+                (self.dataset.training.mapped_triples[:, 0] == s)
+                & (self.dataset.training.mapped_triples[:, 1] == p)
+                & (self.dataset.training.mapped_triples[:, 2] == o)
             )
         ]
-        self.entity_to_training_triples[head].remove(triple)
-        if head != tail:
-            self.entity_to_training_triples[tail].remove(triple)
-        self.entity_to_degree[head] -= 1
-        if head != tail:
-            self.entity_to_degree[tail] -= 1
-        self.to_filter[(head, relation)].remove(tail)
-        self.train_to_filter[(head, relation)].remove(tail)
+        self.entity_to_training_triples[s].remove(triple)
+        if s != o:
+            self.entity_to_training_triples[o].remove(triple)
+        self.entity_to_degree[s] -= 1
+        if s != o:
+            self.entity_to_degree[o] -= 1
+        self.to_filter[(s, p)].remove(o)
+        self.train_to_filter[(s, p)].remove(o)
 
     def remove_training_triples(self, triples):
         for triple in set(triples):
@@ -213,30 +211,27 @@ class Dataset:
                 "The dataset has not been loaded yet, so it is not possible to compute relation types yet."
             )
 
-        relation_to_heads_nums = defaultdict(list)
-        relation_to_tails_nums = defaultdict(list)
+        relation_to_s_num = defaultdict(list)
+        relation_to_o_num = defaultdict(list)
 
         for entity, relation in self.train_to_filter:
+            length = len(self.to_filter[(entity, relation)])
             if relation >= self.num_relations:
-                relation_to_heads_nums[relation - self.num_relations].append(
-                    len(self.to_filter[(entity, relation)])
-                )
+                relation_to_s_num[relation - self.num_relations].append(length)
             else:
-                relation_to_tails_nums[relation].append(
-                    len(self.to_filter[(entity, relation)])
-                )
+                relation_to_o_num[relation].append(length)
 
         self.relation_to_type = {}
 
-        for relation in relation_to_heads_nums:
-            average_heads_per_tail = np.average(relation_to_heads_nums[relation])
-            average_tails_per_head = np.average(relation_to_tails_nums[relation])
+        for relation in relation_to_s_num:
+            average_s_per_o = np.average(relation_to_s_num[relation])
+            average_o_per_s = np.average(relation_to_o_num[relation])
 
-            if average_heads_per_tail > 1.2 and average_tails_per_head > 1.2:
+            if average_s_per_o > 1.2 and average_o_per_s > 1.2:
                 self.relation_to_type[relation] = MANY_TO_MANY
-            elif average_heads_per_tail > 1.2 and average_tails_per_head <= 1.2:
+            elif average_s_per_o > 1.2 and average_o_per_s <= 1.2:
                 self.relation_to_type[relation] = MANY_TO_ONE
-            elif average_heads_per_tail <= 1.2 and average_tails_per_head > 1.2:
+            elif average_s_per_o <= 1.2 and average_o_per_s > 1.2:
                 self.relation_to_type[relation] = ONE_TO_MANY
             else:
                 self.relation_to_type[relation] = ONE_TO_ONE
@@ -257,22 +252,22 @@ class Dataset:
 
     @staticmethod
     def replace_entity_in_triple(triple, old_entity: int, new_entity: int):
-        head, relation, tail = triple
-        if head == old_entity:
-            head = new_entity
-        if tail == old_entity:
-            tail = new_entity
-        return (head, relation, tail)
+        s, p, o = triple
+        if s == old_entity:
+            s = new_entity
+        if o == old_entity:
+            o = new_entity
+        return (s, p, o)
 
     @staticmethod
     def replace_entity_in_triples(triples, old_entity: int, new_entity: int):
         results = []
-        for head, relation, tail in triples:
-            if head == old_entity:
-                head = new_entity
-            if tail == old_entity:
-                tail = new_entity
-            results.append((head, relation, tail))
+        for s, p, o in triples:
+            if s == old_entity:
+                s = new_entity
+            if o == old_entity:
+                o = new_entity
+            results.append((s, p, o))
 
         return results
 

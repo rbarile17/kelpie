@@ -16,11 +16,11 @@ def fake_most_promising_triple(dataset):
 
 
 @pytest.fixture
-def fake_dataset(dataset, triple_to_explain, fake_most_promising_triple):
-    head_to_explain, _, tail_to_explain = triple_to_explain
+def fake_dataset(dataset, pred, fake_most_promising_triple):
+    pred_head, _, pred_tail = pred
     triples_to_remove = []
     for head, relation, tail in dataset.training_triples:
-        if tail == head_to_explain or tail == tail_to_explain:
+        if tail == pred_head or tail == pred_tail:
             triples_to_remove.append((head, relation, tail))
     dataset.remove_training_triples(triples_to_remove)
     dataset.add_training_triple(fake_most_promising_triple)
@@ -33,11 +33,9 @@ def criage_prefilter(fake_dataset):
     return CriagePreFilter(fake_dataset)
 
 
-def test_criage_prefilter(
-    criage_prefilter, triple_to_explain, fake_most_promising_triple
-):
+def test_criage_prefilter(criage_prefilter, pred, fake_most_promising_triple):
     [most_promising_triple] = criage_prefilter.most_promising_triples_for(
-        triple_to_explain=triple_to_explain,
+        pred=pred,
         perspective="",
         top_k=1,
         verbose=True,

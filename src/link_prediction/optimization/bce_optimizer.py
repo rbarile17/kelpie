@@ -1,113 +1,81 @@
-import tqdm
 import torch
 import numpy as np
 
-from torch import optim
 from collections import defaultdict
+from pydantic import BaseModel
+from tqdm import tqdm
+
+from torch import optim
 
 from .optimizer import Optimizer
 
-from ..models import (
-    Model,
-    BATCH_SIZE,
-    LABEL_SMOOTHING,
-    LEARNING_RATE,
-    DECAY,
-    EPOCHS,
-)
+from ..models import Model
 from ..models import ConvE
 
 
+class BCEOptimizerHyperParams(BaseModel):
+    batch_size: int
+    label_smoothing: float
+    lr: float
+    decay: float
+    epochs: int
+
+
 class BCEOptimizer(Optimizer):
-    """
-    This optimizer relies on BCE loss.
-    Instead of considering each training triple as the "unit" for training,
-    it groups training triples into couples (h, r) -> [all t for which <h, r, t> in training set].
-    Each couple (h, r) with the corresponding tails is treated as if it was one triple.
+    def __init__(self, model: Model, hp: BCEOptimizerHyperParams, verbose: bool = True):
+        super().__init__(model=model, hp=hp, verbose=verbose)
 
-    When passing them to the loss...
-
-    In our implementation, it is used by the following models:
-        - TuckER
-        - ConvE
-
-    """
-
-    def __init__(self, model: Model, hyperparameters: dict, verbose: bool = True):
-        """
-        BCEOptimizer initializer.
-        :param model: the model to train
-        :param hyperparameters: a dict with the optimization hyperparameters. It must contain at least:
-                - BATCH SIZE
-                - LEARNING RATE
-                - DECAY
-                - LABEL SMOOTHING
-                - EPOCHS
-        :param verbose:
-        """
-
-        Optimizer.__init__(
-            self, model=model, hyperparameters=hyperparameters, verbose=verbose
-        )
-
-        self.batch_size = hyperparameters[BATCH_SIZE]
-        self.label_smoothing = hyperparameters[LABEL_SMOOTHING]
-        self.learning_rate = hyperparameters[LEARNING_RATE]
-        self.decay = hyperparameters[DECAY]
-        self.epochs = hyperparameters[EPOCHS]
+        self.batch_size = hp.batch_size
+        self.label_smoothing = hp.label_smoothing
+        self.lr = hp.lr
+        self.decay = hp.decay
+        self.epochs = hp.epochs
 
         self.loss = torch.nn.BCELoss()
-        self.optimizer = optim.Adam(
-            params=self.model.parameters(), lr=self.learning_rate
-        )  # we only support ADAM for BCE
+        self.optimizer = optim.Adam(params=self.model.parameters(), lr=self.lr)
         self.scheduler = optim.lr_scheduler.ExponentialLR(self.optimizer, self.decay)
+
+    def get_hyperparams_class():
+        return BCEOptimizerHyperParams
+
+    def get_kelpie_class():
+        return KelpieBCEOptimizer
 
     def train(
         self,
         training_triples: np.array,
         save_path: str = None,
-        evaluate_every: int = -1,
+        eval_every: int = -1,
         valid_triples: np.array = None,
     ):
-        all_training_triples = np.vstack(
-            (training_triples, self.dataset.invert_triples(training_triples))
-        )
-        er_vocab = self.extract_er_vocab(all_training_triples)
+        inverse_triples = self.model.dataset.invert_triples(training_triples)
+
+        training_triples = np.vstack((training_triples, inverse_triples))
+        er_vocab = self.extract_er_vocab(training_triples)
         er_vocab_pairs = list(er_vocab.keys())
 
         self.model.cuda()
 
-        for e in range(1, self.epochs + 1):
-            self.epoch(
-                er_vocab=er_vocab,
-                er_vocab_pairs=er_vocab_pairs,
-                batch_size=self.batch_size,
-            )
+        for e in tqdm(range(1, self.epochs + 1)):
+            self.epoch(er_vocab, er_vocab_pairs, self.batch_size)
 
-            if (
-                evaluate_every > 0
-                and valid_triples is not None
-                and e % evaluate_every == 0
-            ):
+            is_eval_epoch = eval_every > 0 and e % eval_every == 0
+            if valid_triples is not None and is_eval_epoch:
                 self.model.eval()
-                mrr, h1, h10, mr = self.evaluator.evaluate(
-                    triples=valid_triples, write_output=False
-                )
+                metrics = self.evaluator.evaluate(valid_triples, write_output=False)
 
-                print("\tValidation Hits@1: %f" % h1)
-                print("\tValidation Hits@10: %f" % h10)
-                print("\tValidation Mean Reciprocal Rank': %f" % mrr)
-                print("\tValidation Mean Rank': %f" % mr)
+                print(f"\tValidation Hits@1: {metrics['h1']}")
+                print(f"\tValidation Hits@10: {metrics['h10']}")
+                print(f"\tValidation Mean Reciprocal Rank: {metrics['mrr']}")
+                print(f"\tValidation Mean Rank: {metrics['mr']}")
 
                 if save_path is not None:
-                    print("\t saving model...")
+                    print("\t Saving model...")
                     torch.save(self.model.state_dict(), save_path)
-                print("\t done.")
 
         if save_path is not None:
-            print("\t saving model...")
+            print("\t Saving model...")
             torch.save(self.model.state_dict(), save_path)
-            print("\t done.")
 
     def extract_er_vocab(self, triples):
         er_vocab = defaultdict(list)
@@ -134,13 +102,12 @@ class BCEOptimizer(Optimizer):
         np.random.shuffle(er_vocab_pairs)
         self.model.train()
 
-        with tqdm.tqdm(
-            total=len(er_vocab_pairs), unit="ex", disable=not self.verbose
-        ) as bar:
-            bar.set_description("train loss")
+        iters = len(er_vocab_pairs)
+        with tqdm(total=iters, unit="ex", disable=not self.verbose, leave=False) as p:
+            p.set_description("train loss")
             batch_start = 0
 
-            while batch_start < len(er_vocab_pairs):
+            while batch_start < iters:
                 batch, targets = self.extract_batch(
                     er_vocab=er_vocab,
                     er_vocab_pairs=er_vocab_pairs,
@@ -149,8 +116,8 @@ class BCEOptimizer(Optimizer):
                 )
                 l = self.step_on_batch(batch, targets)
                 batch_start += batch_size
-                bar.update(batch_size)
-                bar.set_postfix(loss=str(round(l.item(), 6)))
+                p.update(batch_size)
+                p.set_postfix(loss=f"{l.item():.2f}")
 
             if self.decay:
                 self.scheduler.step()
@@ -179,16 +146,12 @@ class BCEOptimizer(Optimizer):
 
 
 class KelpieBCEOptimizer(BCEOptimizer):
-    def __init__(self, model: Model, hyperparameters: dict, verbose: bool = True):
-        super(KelpieBCEOptimizer, self).__init__(
-            model=model, hyperparameters=hyperparameters, verbose=verbose
-        )
+    def __init__(self, model: Model, hp: dict, verbose: bool = True):
+        super().__init__(model=model, hp=hp, verbose=verbose)
 
         self.optimizer = optim.Adam(params=self.model.parameters())
 
-    # Override
     def epoch(self, er_vocab, er_vocab_pairs, batch_size: int):
-        # np.random.shuffle(er_vocab_pairs)
         self.model.train()
 
         with tqdm.tqdm(
@@ -206,9 +169,6 @@ class KelpieBCEOptimizer(BCEOptimizer):
                 )
                 l = self.step_on_batch(batch, targets)
 
-                # THIS IS THE ONE DIFFERENCE FROM THE ORIGINAL OPTIMIZER.
-                # THIS IS EXTREMELY IMPORTANT BECAUSE THIS WILL PROPAGATE THE UPDATES IN THE KELPIE ENTITY EMBEDDING
-                # TO THE MATRIX CONTAINING ALL THE EMBEDDINGS
                 self.model.update_embeddings()
 
                 batch_start += batch_size
@@ -219,7 +179,6 @@ class KelpieBCEOptimizer(BCEOptimizer):
                 self.scheduler.step()
 
     def step_on_batch(self, batch, targets):
-        # just making sure that these layers are still in eval() mode
         if isinstance(self.model, ConvE):
             self.model.batch_norm_1.eval()
             self.model.batch_norm_2.eval()

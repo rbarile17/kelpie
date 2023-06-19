@@ -20,11 +20,9 @@ def compute_semantic_similarity_relations(relations_semantic, relation1, relatio
 
 
 def compute_semantic_similarity_triples(dataset, rule, known_common_entity):
-    rule_relations = set([relation for _, relation, _ in rule])
-    entities_head_adj = set(
-        [h if h != known_common_entity else t for (h, _, t) in rule]
-    )
-    e_pairs = [(ent1, ent2) for (ent1, ent2) in pairs(entities_head_adj)]
+    rule_relations = set([p for _, p, _ in rule])
+    entities_s_adj = set([s if s != known_common_entity else o for (s, _, o) in rule])
+    e_pairs = [(ent1, ent2) for (ent1, ent2) in pairs(entities_s_adj)]
     r_pairs = [(rel1, rel2) for (rel1, rel2) in pairs(rule_relations)]
 
     semantic_similarity_rels = 0

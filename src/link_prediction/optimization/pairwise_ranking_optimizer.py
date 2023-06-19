@@ -1,157 +1,129 @@
-import tqdm
+import optuna
 import torch
+
 import numpy as np
+
+from pydantic import BaseModel
+
+from tqdm import tqdm
+
+from torch import nn
 from torch import optim
+
 from .optimizer import Optimizer
 
-from ..regularization import L2
-from ..models import (
-    Model,
-    BATCH_SIZE,
-    LEARNING_RATE,
-    EPOCHS,
-    MARGIN,
-    NEGATIVE_TRIPLES_RATIO,
-    REGULARIZER_WEIGHT,
-    KelpieModel,
-)
+from ..regularizers import L2
+from ..models import Model, KelpieModel
+
+
+class PairwiseRankingOptimizerHyperParams(BaseModel):
+    batch_size: int
+    epochs: int
+    lr: float
+    margin: float
+    negative_triples_ratio: int
+    regularizer_weight: float
 
 
 class PairwiseRankingOptimizer(Optimizer):
-    """
-    This optimizer relies on Pairwise Ranking loss, also called Margin-based loss.
-    """
+    def __init__(
+        self,
+        model: Model,
+        hp: PairwiseRankingOptimizerHyperParams,
+        verbose: bool = True,
+    ):
+        super().__init__(model=model, hp=hp, verbose=verbose)
 
-    def __init__(self, model: Model, hyperparameters: dict, verbose: bool = True):
-        """
-        PairwiseRankingOptimizer initializer.
-        :param model: the model to train
-        :param hyperparameters: a dict with the optimization hyperparameters. It must contain at least:
-                - BATCH SIZE
-                - LEARNING RATE
-                - DECAY
-                - LABEL SMOOTHING
-                - EPOCHS
-        :param verbose:
-        """
+        self.batch_size = hp.batch_size
+        self.lr = hp.lr
+        self.epochs = hp.epochs
+        self.margin = hp.margin
+        self.negative_triples_ratio = hp.negative_triples_ratio
+        self.regularizer_weight = hp.regularizer_weight
 
-        Optimizer.__init__(
-            self, model=model, hyperparameters=hyperparameters, verbose=verbose
-        )
+        self.loss = nn.MarginRankingLoss(margin=self.margin, reduction="mean").cuda()
 
-        self.batch_size = hyperparameters[BATCH_SIZE]
-        self.learning_rate = hyperparameters[LEARNING_RATE]
-        self.epochs = hyperparameters[EPOCHS]
-        self.margin = hyperparameters[MARGIN]
-        self.negative_triples_ratio = hyperparameters[NEGATIVE_TRIPLES_RATIO]
-        self.regularizer_weight = hyperparameters[REGULARIZER_WEIGHT]
-
-        self.loss = torch.nn.MarginRankingLoss(
-            margin=self.margin, reduction="mean"
-        ).cuda()
-
-        self.optimizer = optim.Adam(
-            params=self.model.parameters(), lr=self.learning_rate
-        )  # we only support ADAM for PairwiseRankingOptimizer
+        self.optimizer = optim.Adam(params=self.model.parameters(), lr=self.lr)
         self.regularizer = L2(self.regularizer_weight)
+
+    def get_hyperparams_class():
+        return PairwiseRankingOptimizerHyperParams
+
+    def get_kelpie_class():
+        return KelpiePairwiseRankingOptimizer
 
     def train(
         self,
-        training_triples: np.array,
+        training_triples,
         save_path: str = None,
-        evaluate_every: int = -1,
-        valid_triples: np.array = None,
+        eval_every: int = -1,
+        valid_triples=None,
     ):
-        training_triples = np.vstack(
-            (training_triples, self.dataset.invert_triples(training_triples))
-        )
+        inverse_triples = self.dataset.invert_triples(training_triples)
+        training_triples = np.vstack((training_triples, inverse_triples))
 
         self.model.cuda()
 
-        for e in range(1, self.epochs + 1):
+        for e in tqdm(range(1, self.epochs + 1), disable=not self.verbose):
             self.epoch(training_triples=training_triples, batch_size=self.batch_size)
 
-            if (
-                evaluate_every > 0
-                and valid_triples is not None
-                and e % evaluate_every == 0
-            ):
+            is_eval_epoch = eval_every > 0 and e % eval_every == 0
+            if valid_triples is not None and is_eval_epoch:
                 self.model.eval()
                 with torch.no_grad():
-                    mrr, h1, h10, mr = self.evaluator.evaluate(
-                        triples=valid_triples, write_output=False
-                    )
+                    metrics = self.evaluator.evaluate(valid_triples, write_output=False)
 
-                print("\tValidation Hits@1: %f" % h1)
-                print("\tValidation Hits@10: %f" % h10)
-                print("\tValidation Mean Reciprocal Rank': %f" % mrr)
-                print("\tValidation Mean Rank': %f" % mr)
+                print(f"\tValidation Hits@1: {metrics['h1']}")
+                print(f"\tValidation Hits@10: {metrics['h10']}")
+                print(f"\tValidation Mean Reciprocal Rank: {metrics['mrr']}")
+                print(f"\tValidation Mean Rank: {metrics['mr']}")
 
                 if save_path is not None:
-                    print("\t saving model...")
+                    print("\tSaving model...")
                     torch.save(self.model.state_dict(), save_path)
-                print("\t done.")
 
         if save_path is not None:
-            print("\t saving model...")
+            print("Saving model...")
             torch.save(self.model.state_dict(), save_path)
-            print("\t done.")
 
-    def epoch(self, batch_size: int, training_triples: np.array):
+    def epoch(self, batch_size: int, training_triples):
         np.random.shuffle(training_triples)
         repeated = np.repeat(training_triples, self.negative_triples_ratio, axis=0)
 
-        all_positive_triples = torch.from_numpy(repeated)
+        positive_triples = torch.from_numpy(repeated)
+        size = torch.Size([len(positive_triples)])
+        head_or_tail = torch.randint(high=2, size=size)
+        random_entities = torch.randint(high=self.dataset.num_entities, size=size)
 
-        head_or_tail = torch.randint(
-            high=2, size=torch.Size([len(all_positive_triples)])
-        )
-        random_entities = torch.randint(
-            high=self.dataset.num_entities, size=torch.Size([len(all_positive_triples)])
-        )
+        mask_head = head_or_tail == 1
+        positive_heads = positive_triples[:, 0].type(torch.LongTensor)
+        corrupted_heads = torch.where(mask_head, random_entities, positive_heads)
+        mask_tail = ~mask_head
+        positive_tails = positive_triples[:, 2].type(torch.LongTensor)
+        corrupted_tails = torch.where(mask_tail, random_entities, positive_tails)
+        negative_triples = (corrupted_heads, positive_triples[:, 1], corrupted_tails)
+        negative_triples = torch.stack(negative_triples, dim=1)
 
-        corrupted_heads = torch.where(
-            head_or_tail == 1,
-            random_entities,
-            all_positive_triples[:, 0].type(torch.LongTensor),
-        )
-        corrupted_tails = torch.where(
-            head_or_tail == 0,
-            random_entities,
-            all_positive_triples[:, 2].type(torch.LongTensor),
-        )
-        all_negative_triples = torch.stack(
-            (corrupted_heads, all_positive_triples[:, 1], corrupted_tails), dim=1
-        )
-
-        all_positive_triples.cuda()
-        all_negative_triples.cuda()
+        positive_triples.cuda()
+        negative_triples.cuda()
         self.model.train()
 
-        with tqdm.tqdm(
-            total=len(training_triples), unit="ex", disable=not self.verbose
-        ) as bar:
-            bar.set_description("train loss")
+        num_triples = len(training_triples)
+        with tqdm(
+            total=num_triples, unit="ex", disable=not self.verbose, leave=False
+        ) as p:
+            p.set_description("Train loss")
             batch_start = 0
 
-            while batch_start < len(training_triples):
-                positive_batch, negative_batch = (
-                    all_positive_triples[
-                        batch_start : min(
-                            batch_start + batch_size, len(training_triples)
-                        )
-                    ],
-                    all_negative_triples[
-                        batch_start : min(
-                            batch_start + batch_size, len(training_triples)
-                        )
-                    ],
-                )
+            while batch_start < num_triples:
+                batch_end = min(batch_start + batch_size, len(training_triples))
+                positive_batch = positive_triples[batch_start:batch_end]
+                negative_batch = negative_triples[batch_start:batch_end]
 
                 l = self.step_on_batch(positive_batch, negative_batch)
                 batch_start += batch_size
-                bar.update(batch_size)
-                bar.set_postfix(loss=str(round(l.item(), 6)))
+                p.update(batch_size)
+                p.set_postfix(loss=f"{l.item():.2f}")
 
     def step_on_batch(self, positive_batch, negative_batch):
         self.optimizer.zero_grad()
@@ -161,12 +133,13 @@ class PairwiseRankingOptimizer(Optimizer):
         target = torch.tensor([-1], dtype=torch.float).cuda()
 
         l_fit = self.loss(positive_scores, negative_scores, target)
-        l_reg = (
-            self.regularizer.forward(positive_factors)
-            + self.regularizer.forward(negative_factors)
-        ) / 2
+
+        positive_reg = self.regularizer.forward(positive_factors)
+        negative_reg = self.regularizer.forward(negative_factors)
+        l_reg = (positive_reg + negative_reg) / 2
 
         loss = l_fit + l_reg
+
         loss.backward()
         self.optimizer.step()
 
@@ -174,76 +147,46 @@ class PairwiseRankingOptimizer(Optimizer):
 
 
 class KelpiePairwiseRankingOptimizer(PairwiseRankingOptimizer):
-    def __init__(self, model: KelpieModel, hyperparameters: dict, verbose: bool = True):
-        super(KelpiePairwiseRankingOptimizer, self).__init__(
-            model=model, hyperparameters=hyperparameters, verbose=verbose
-        )
-        self.kelpie_entity_id = model.kelpie_entity_id
+    def __init__(self, model: KelpieModel, hp: dict, verbose: bool = True):
+        super().__init__(model=model, hp=hp, verbose=verbose)
+        self.kelpie_entity = model.kelpie_entity
 
-    # Override
-    def epoch(self, batch_size: int, training_triples: np.array):
+    def epoch(self, batch_size: int, training_triples):
         np.random.shuffle(training_triples)
+        repeated = np.repeat(training_triples, self.negative_triples_ratio, axis=0)
+
+        positive_triples = torch.from_numpy(repeated)
+        size = torch.Size([len(positive_triples)])
+        random_entities = torch.randint(high=self.dataset.num_entities, size=size)
+        head_or_tail = torch.randint(high=2, size=size)
+
+        mask_head = head_or_tail == 1
+        positive_heads = positive_triples[:, 0].type(torch.LongTensor)
+        corrupted_heads = torch.where(mask_head, random_entities, positive_heads)
+        mask_tail = ~mask_head
+        positive_tails = positive_triples[:, 2].type(torch.LongTensor)
+        corrupted_tails = torch.where(mask_tail, random_entities, positive_tails)
+        negative_triples = (corrupted_heads, positive_triples[:, 1], corrupted_tails)
+        negative_triples = torch.stack(negative_triples, dim=1)
+
+        positive_triples.cuda()
+        negative_triples.cuda()
         self.model.train()
 
-        repeated = np.repeat(training_triples, self.negative_triples_ratio, axis=0)
-        all_positive_triples = torch.from_numpy(repeated)
-
-        random_entities = torch.randint(
-            high=self.dataset.num_entities, size=torch.Size([len(all_positive_triples)])
-        )
-        head_or_tail = torch.randint(
-            high=2, size=torch.Size([len(all_positive_triples)])
-        )
-        corrupted_heads = torch.where(
-            head_or_tail == 1,
-            random_entities,
-            all_positive_triples[:, 0].type(torch.LongTensor),
-        )
-        corrupted_tails = torch.where(
-            head_or_tail == 0,
-            random_entities,
-            all_positive_triples[:, 2].type(torch.LongTensor),
-        )
-
-        # kelpie_entity_is_head = torch.where(all_positive_triples[:, 0] == self.kelpie_entity_id, torch.ones(len(all_positive_triples)), torch.zeros(len(all_positive_triples)))
-        # corrupted_heads = torch.where(kelpie_entity_is_head == 0, random_entities, all_positive_triples[:, 0].type(torch.LongTensor))
-        # corrupted_tails = torch.where(kelpie_entity_is_head == 1, random_entities, all_positive_triples[:, 2].type(torch.LongTensor))
-
-        all_negative_triples = torch.stack(
-            (corrupted_heads, all_positive_triples[:, 1], corrupted_tails), dim=1
-        )
-
-        all_positive_triples.cuda()
-        all_negative_triples.cuda()
-
-        with tqdm.tqdm(
-            total=len(training_triples), unit="ex", disable=not self.verbose
-        ) as bar:
-            bar.set_description("train loss")
-
+        num_triples = len(training_triples)
+        with tqdm(total=num_triples, unit="ex", disable=not self.verbose) as p:
+            p.set_description("Train loss")
             batch_start = 0
 
-            while batch_start < len(training_triples):
-                positive_batch, negative_batch = (
-                    all_positive_triples[
-                        batch_start : min(
-                            batch_start + batch_size, len(training_triples)
-                        )
-                    ],
-                    all_negative_triples[
-                        batch_start : min(
-                            batch_start + batch_size, len(training_triples)
-                        )
-                    ],
-                )
+            while batch_start < num_triples:
+                batch_end = min(batch_start + batch_size, len(training_triples))
+                positive_batch = positive_triples[batch_start:batch_end]
+                negative_batch = negative_triples[batch_start:batch_end]
 
                 l = self.step_on_batch(positive_batch, negative_batch)
 
-                # THIS IS THE ONE DIFFERENCE FROM THE ORIGINAL OPTIMIZER.
-                # THIS IS EXTREMELY IMPORTANT BECAUSE THIS WILL PROPAGATE THE UPDATES IN THE KELPIE ENTITY EMBEDDING
-                # TO THE MATRIX CONTAINING ALL THE EMBEDDINGS
                 self.model.update_embeddings()
 
                 batch_start += batch_size
-                bar.update(batch_size)
-                bar.set_postfix(loss=str(round(l.item(), 6)))
+                p.update(batch_size)
+                p.set_postfix(loss=str(round(l.item(), 6)))

@@ -4,7 +4,7 @@ from src.tests.fixtures import *
 
 
 @pytest.fixture
-def highest_relevance_triple(dataset):
+def best_triple(dataset):
     return dataset.ids_triple(
         (
             "/m/07z2lx",
@@ -15,7 +15,7 @@ def highest_relevance_triple(dataset):
 
 
 @pytest.fixture
-def lowest_relevance_triple(dataset):
+def worst_triple(dataset):
     return dataset.ids_triple(
         (
             "/m/03cv_gy",

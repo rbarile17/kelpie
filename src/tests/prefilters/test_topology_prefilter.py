@@ -25,23 +25,10 @@ def topology_prefilter(fake_dataset):
 
 
 def test_head_perspective(
-    topology_prefilter, triple_to_explain, fake_most_promising_triple
+    topology_prefilter, pred, fake_most_promising_triple
 ):
     [most_promising_triple] = topology_prefilter.most_promising_triples_for(
-        triple_to_explain=triple_to_explain,
-        perspective="head",
-        top_k=1,
-        verbose=True,
-    )
-
-    assert most_promising_triple == fake_most_promising_triple
-
-
-def test_tail_perspective(
-    topology_prefilter, triple_to_explain, fake_most_promising_triple
-):
-    [most_promising_triple] = topology_prefilter.most_promising_triples_for(
-        triple_to_explain=triple_to_explain,
+        triple_to_explain=pred,
         perspective="head",
         top_k=1,
         verbose=True,
