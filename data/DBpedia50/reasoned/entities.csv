@@ -106,7 +106,6 @@ $_(film),"{'http://schema.org/Movie', 'http://dbpedia.org/ontology/Film', 'http:
 1986_French_Grand_Prix,{'http://dbpedia.org/ontology/GrandPrix'}
 1986–87_Newcastle_United_F.C._season,"{'http://dbpedia.org/ontology/SoccerClubSeason', 'http://dbpedia.org/ontology/SoccerClub', 'http://www.wikidata.org/entity/Q476028'}"
 1987_Detroit_Grand_Prix,{'http://dbpedia.org/ontology/GrandPrix'}
-1987_Munster_Senior_Hurling_Championship_Final,{'http://dbpedia.org/ontology/FootballMatch'}
 1987_Portuguese_Grand_Prix,{'http://dbpedia.org/ontology/GrandPrix'}
 1987–88_Newcastle_United_F.C._season,"{'http://dbpedia.org/ontology/SoccerClubSeason', 'http://dbpedia.org/ontology/SoccerClub', 'http://www.wikidata.org/entity/Q476028'}"
 1988_Maldives_coup_d'état,{'http://dbpedia.org/ontology/MilitaryConflict'}
@@ -22279,7 +22278,6 @@ Tinamou,{'http://dbpedia.org/ontology/Species'}
 Tink_(musician),"{'http://www.wikidata.org/entity/Q215380', 'http://dbpedia.org/ontology/MusicalArtist', 'http://dbpedia.org/ontology/Band'}"
 Tintri,"{'http://www.wikidata.org/entity/Q4830453', 'http://dbpedia.org/ontology/Company'}"
 Tipper_Gore,"{'http://dbpedia.org/ontology/Politician', 'http://www.wikidata.org/entity/Q82955', 'http://dbpedia.org/ontology/OfficeHolder'}"
-Tipperary_GAA,"{'http://dbpedia.org/ontology/SoccerClub', 'http://www.wikidata.org/entity/Q476028'}"
 Tirana,"{'http://schema.org/City', 'http://dbpedia.org/ontology/City', 'http://www.wikidata.org/entity/Q515', 'http://dbpedia.org/ontology/Location'}"
 Tirant_lo_Blanc_(film),"{'http://schema.org/Movie', 'http://dbpedia.org/ontology/Film', 'http://www.wikidata.org/entity/Q11424'}"
 Tired_Pony,"{'http://www.wikidata.org/entity/Q215380', 'http://dbpedia.org/ontology/MusicalArtist', 'http://dbpedia.org/ontology/Band'}"
