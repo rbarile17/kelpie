@@ -4,12 +4,15 @@ import random
 import numpy as np
 
 from .explanation_builder import ExplanationBuilder
+from .summarization import Simulation, Bisimulation
 
 from .. import key
 
 
 class StochasticBuilder(ExplanationBuilder):
-    def __init__(self, xsi, engine, max_explanation_length: int = 4):
+    def __init__(
+        self, xsi, engine, summarization: str = None, max_explanation_length: int = 4
+    ):
         dataset = engine.dataset
         super().__init__(dataset=dataset, max_explanation_length=max_explanation_length)
 
@@ -18,7 +21,22 @@ class StochasticBuilder(ExplanationBuilder):
         self.xsi = xsi
         self.engine = engine
 
+        self.summarization = None
+        if summarization == "simulation":
+            self.summarization = Simulation(dataset)
+        elif summarization == "bisimulation":
+            self.summarization = Bisimulation(dataset)
+        elif summarization == "bisimulation_d1":
+            self.summarization = Bisimulation(dataset, depth=1)
+
     def build_explanations(self, pred, candidate_triples: list, k: int = 10):
+        pred_head, _, _ = pred
+        if self.summarization is not None:
+            summary_triples = self.summarization.summarize(pred_head, candidate_triples)
+            if len(summary_triples) > 0:
+                candidate_triples = summary_triples
+            else:
+                self.summarization = None
         triple_to_rel = self.explore_singleton_rules(pred, candidate_triples)
 
         triple_to_rel_sorted = triple_to_rel.items()
@@ -55,16 +73,28 @@ class StochasticBuilder(ExplanationBuilder):
         variance = np.var(np.array(relevances))
         rule_to_rel = rule_to_rel[:k]
 
-        return rule_to_rel
+        mapped_rule_to_rel = []
+        if self.summarization:
+            for rule, rel in rule_to_rel:
+                rule = self.summarization.map_rule(rule)
+                mapped_rule_to_rel.append((rule, rel))
+        else:
+            mapped_rule_to_rel = rule_to_rel
+
+        return mapped_rule_to_rel
 
     def explore_singleton_rules(self, pred, triples: list):
         triple_to_relevance = {}
 
         for triple in triples:
-            printable_triple = self.dataset.printable_nple(triple)
+            mapped_triple = [triple]
+            if self.summarization:
+                mapped_triple = self.summarization.map_rule(mapped_triple)
+
+            printable_triple = self.dataset.printable_nple(mapped_triple)
             print(f"\tComputing relevance for rule: {printable_triple}")
 
-            relevance = self.engine.compute_relevance(pred, triple)
+            relevance = self.engine.compute_relevance(pred, mapped_triple)
             triple_to_relevance[triple] = relevance
             print(f"\tRelevance = {relevance:.3f}")
         return triple_to_relevance
@@ -85,12 +115,16 @@ class StochasticBuilder(ExplanationBuilder):
         for i, (rule, _) in enumerate(rules):
             if terminate:
                 break
+            
+            mapped_rule = rule
+            if self.summarization:
+                mapped_rule = self.summarization.map_rule(rule)
 
             print(
                 "\tComputing relevance for rule: \n\t\t"
-                f"{self.dataset.printable_nple(rule)}"
+                f"{self.dataset.printable_nple(mapped_rule)}"
             )
-            relevance = self.engine.compute_relevance(pred, rule)
+            relevance = self.engine.compute_relevance(pred, mapped_rule)
             print(f"\tRelevance = {relevance:.3f}")
             rule_to_relevance[rule] = relevance
             computed_relevances += 1

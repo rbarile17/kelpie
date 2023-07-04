@@ -14,6 +14,7 @@ from .prefilters import (
 
 from .data import Dataset
 from .explanation_builders import CriageBuilder, DataPoisoningBuilder, StochasticBuilder
+from .explanation_builders.summarization import SUMMARIZATIONS
 from .pipeline import NecessaryPipeline, SufficientPipeline
 from .prefilters import (
     CriagePreFilter,
@@ -41,7 +42,7 @@ PREFILTERS = [
 modes = ["necessary", "sufficient"]
 
 
-def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi):
+def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi, summarization):
     prefilter_map = {
         TOPOLOGY_PREFILTER: TopologyPreFilter,
         TYPE_PREFILTER: TypeBasedPreFilter,
@@ -63,7 +64,7 @@ def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi):
             xsi = xsi if xsi is not None else DEFAULT_XSI_THRESHOLD
             prefilter = prefilter_map.get(prefilter, TopologyPreFilter)(dataset=dataset)
             engine = NecessaryPostTrainingEngine(model, dataset, hp)
-            builder = StochasticBuilder(xsi, engine)
+            builder = StochasticBuilder(xsi, engine, summarization=summarization)
         pipeline = NecessaryPipeline(dataset, prefilter, builder)
     elif mode == "sufficient":
         if baseline == "criage":
@@ -78,7 +79,7 @@ def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi):
             xsi = xsi if xsi is not None else DEFAULT_XSI_THRESHOLD
             prefilter = prefilter_map.get(prefilter, TopologyPreFilter)(dataset=dataset)
             engine = SufficientPostTrainingEngine(model, dataset, hp)
-            builder = StochasticBuilder(xsi, engine)
+            builder = StochasticBuilder(xsi, engine, summarization=summarization)
         pipeline = SufficientPipeline(dataset, prefilter, builder)
 
     return pipeline
@@ -110,6 +111,7 @@ def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi):
     help="The relevance acceptance threshold.",
 )
 @click.option("--prefilter", type=click.Choice(PREFILTERS))
+@click.option("--summarization", type=click.Choice(SUMMARIZATIONS))
 @click.option(
     "--prefilter_threshold",
     type=int,
@@ -126,6 +128,7 @@ def main(
     prefilter,
     relevance_threshold,
     prefilter_threshold,
+    summarization,
 ):
     set_seeds(42)
 
@@ -160,6 +163,7 @@ def main(
         baseline,
         prefilter,
         relevance_threshold,
+        summarization,
     )
 
     explanations = []

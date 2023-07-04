@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import pandas as pd
+import networkx as nx
 
 from ast import literal_eval
 from collections import defaultdict
@@ -158,6 +159,38 @@ class Dataset:
     def printable_triple(self, triple):
         s, p, o = self.labels_triple(triple)
         return f"<{s}, {p}, {o}>"
+
+    def get_related_triples(self, node, triples=None, depth=1):
+        if not triples:
+            triples = self.entity_to_training_triples[node]
+        triples = set(triples)
+        neighbors = [head if head != node else tail for head, _, tail in triples]
+
+        if depth > 0:
+            for neighbor in neighbors:
+                neighbor_triples = self.get_related_triples(neighbor, depth=depth - 1)
+                triples = triples.union(neighbor_triples)
+
+        return triples
+
+    def get_subgraph(self, node, triples=None, depth=1):
+        triples = self.get_related_triples(node, triples=triples, depth=depth)
+        edges = [(h, t, {"label": self.id_to_relation[r]}) for h, r, t in triples]
+        graph = nx.MultiDiGraph(edges)
+
+        labels = {node: {"label": self.id_to_entity[node]} for node in graph.nodes}
+        nx.set_node_attributes(graph, labels)
+        return graph
+
+    def get_equivalence_classes(self, subgrah):
+        nodes = subgrah.nodes
+        e_sem = self.entities_semantic_impl
+        e_sem = e_sem[e_sem.entity.isin(nodes)]
+        node_types = e_sem.groupby("classes_str")["entity"].apply(list)
+        node_types = node_types.to_dict()
+        node_types = [frozenset(part) for part in node_types.values()]
+
+        return node_types
 
     def add_training_triple(self, triple):
         s, p, o = triple
