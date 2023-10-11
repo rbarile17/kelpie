@@ -9,13 +9,19 @@ from collections import defaultdict
 from pykeen.datasets import get_dataset
 
 from .names import ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
-from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
+from .. import DB100K_PATH, DB100K_MAPPED_PATH, DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
 
 
 class Dataset:
     def __init__(self, dataset: str):
         self.name = dataset
-        if dataset == "DBpedia50":
+        if dataset == "DB100K":
+            self.dataset = get_dataset(
+                training=DB100K_MAPPED_PATH / "train.txt",
+                testing=DB100K_MAPPED_PATH / "test.txt",
+                validation=DB100K_MAPPED_PATH / "valid.txt",
+            )
+        elif dataset == "DBpedia50":
             self.dataset = get_dataset(
                 training=DBPEDIA50_PATH / "train.txt",
                 testing=DBPEDIA50_PATH / "test.txt",
@@ -45,7 +51,6 @@ class Dataset:
             self.entities_semantic = e_sem
             self.entities_semantic_impl = e_sem_impl
             self.relations_semantic = r_sem
-
         else:
             self.dataset = get_dataset(dataset=dataset)
         self.id_to_entity = {v: k for k, v in self.dataset.entity_to_id.items()}

@@ -1,6 +1,6 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
 
-from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
+from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH, DB100K_PATH, DB100K_REASONED_PATH
 
 from ..data import Dataset
 from .semantic_similarity import (
