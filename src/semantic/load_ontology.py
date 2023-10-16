@@ -5,23 +5,10 @@ from ast import literal_eval
 
 from owlready2 import *
 
-from . import DBPEDIA50_PATH
+from .. import DBPEDIA50_PATH, DB100K_PATH
 from ..data import Dataset
 
-
 tqdm.pandas()
-onto_path.append(str(DBPEDIA50_PATH))
-onto = get_ontology("DBpedia.owl")
-onto = onto.load()
-
-dbr = onto.get_namespace("http://dbpedia.org/resource/")
-
-entities = pd.read_csv(
-    DBPEDIA50_PATH / "entities.csv",
-    header=None,
-    names=["entity", "classes"],
-    converters={"classes": literal_eval},
-)
 
 
 def load_triple(triple):
@@ -72,6 +59,16 @@ def check_disjoint_classes(classes):
     return False
 
 
+onto_path.append(str(DB100K_PATH))
+onto = get_ontology("DBpedia.owl")
+
+onto = onto.load()
+
+dbr = onto.get_namespace("http://dbpedia.org/resource/")
+
+converters = {"classes": literal_eval}
+entities = pd.read_csv(DB100K_PATH / "entities.csv", converters=converters)
+
 entities["disjoint"] = entities["classes"].progress_map(check_disjoint_classes)
 entities = entities[entities["disjoint"] == False]
 entities = entities.drop(columns=["disjoint"])
@@ -91,9 +88,9 @@ for _, (entity, classes) in entities.iterrows():
         with dbr:
             Thing(entity)
 
-dataset = Dataset(dataset="DBpedia50")
+dataset = Dataset(dataset="DB100K")
 
 for triple in tqdm(dataset.training_triples):
     load_triple(triple)
 
-onto.save(str((DBPEDIA50_PATH / "DBpedia50.owl")))
+onto.save(str((DB100K_PATH / "DB100K.owl")))
