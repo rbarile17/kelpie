@@ -11,15 +11,6 @@ from ..data import Dataset
 tqdm.pandas()
 
 
-def load_triple(triple):
-    s, p, o = dataset.labels_triple(triple)
-    if s in entity_names and o in entity_names:
-        with dbr:
-            value = dbr[s].__dict__.get(p, [])
-            value.append(dbr[o])
-            dbr[s].__class__(s, **{p: value})
-
-
 def check_disjoint_classes(classes):
     if len(classes) < 2:
         return False
@@ -70,11 +61,12 @@ converters = {"classes": literal_eval}
 entities = pd.read_csv(DB100K_PATH / "entities.csv", converters=converters)
 
 entities["disjoint"] = entities["classes"].progress_map(check_disjoint_classes)
-entities = entities[entities["disjoint"] == False]
+entities.loc[entities["disjoint"], "classes"] = None
 entities = entities.drop(columns=["disjoint"])
 entity_names = entities["entity"].tolist()
 for _, (entity, classes) in entities.iterrows():
     instantiated_classes = 0
+    classes = set() if classes is None else classes
     for class_ in classes:
         try:
             with dbr:
@@ -91,6 +83,11 @@ for _, (entity, classes) in entities.iterrows():
 dataset = Dataset(dataset="DB100K")
 
 for triple in tqdm(dataset.training_triples):
-    load_triple(triple)
+    s, p, o = dataset.labels_triple(triple)
+    if s in entity_names and o in entity_names:
+        with dbr:
+            individual = dbr[s]
+            if hasattr(individual, p):
+                getattr(individual, p).append(dbr[o])
 
 onto.save(str((DB100K_PATH / "DB100K.owl")))
