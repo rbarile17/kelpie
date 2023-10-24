@@ -160,6 +160,7 @@ cython_debug/
 #.idea/
 
 .vscode/
+/data/DB100K/DB100K.owl
 /models/
 /results/
 notes.txt
