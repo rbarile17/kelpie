@@ -58,11 +58,16 @@ class PairwiseRankingOptimizer(Optimizer):
         save_path: str = None,
         eval_every: int = -1,
         valid_triples=None,
+        trial=None,
+        patience=5,
     ):
         inverse_triples = self.dataset.invert_triples(training_triples)
         training_triples = np.vstack((training_triples, inverse_triples))
 
         self.model.cuda()
+
+        best_valid_metric = None
+        epochs_without_improvement = 0
 
         for e in tqdm(range(1, self.epochs + 1), disable=not self.verbose):
             self.epoch(training_triples=training_triples, batch_size=self.batch_size)
@@ -73,14 +78,20 @@ class PairwiseRankingOptimizer(Optimizer):
                 with torch.no_grad():
                     metrics = self.evaluator.evaluate(valid_triples, write_output=False)
 
-                print(f"\tValidation Hits@1: {metrics['h1']}")
-                print(f"\tValidation Hits@10: {metrics['h10']}")
-                print(f"\tValidation Mean Reciprocal Rank: {metrics['mrr']}")
-                print(f"\tValidation Mean Rank: {metrics['mr']}")
+                if trial:
+                    trial.report(metrics["h1"], e)
 
-                if save_path is not None:
-                    print("\tSaving model...")
-                    torch.save(self.model.state_dict(), save_path)
+                    if trial.should_prune():
+                        raise optuna.exceptions.TrialPruned()
+
+                if best_valid_metric is None or metrics["h1"] > best_valid_metric:
+                    best_valid_metric = metrics["h1"]
+                    epochs_without_improvement = 0
+                else:
+                    epochs_without_improvement += 1
+
+                if epochs_without_improvement >= patience:
+                    break
 
         if save_path is not None:
             print("Saving model...")
