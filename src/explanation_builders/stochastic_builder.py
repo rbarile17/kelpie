@@ -1,5 +1,6 @@
 import itertools
 import random
+import time
 
 import numpy as np
 
@@ -30,6 +31,7 @@ class StochasticBuilder(ExplanationBuilder):
             self.summarization = Bisimulation(dataset, depth=1)
 
     def build_explanations(self, pred, candidate_triples: list, k: int = 10):
+        start = time.time()
         pred_head, _, _ = pred
         if self.summarization is not None:
             summary_triples = self.summarization.summarize(pred_head, candidate_triples)
@@ -37,6 +39,7 @@ class StochasticBuilder(ExplanationBuilder):
                 candidate_triples = summary_triples
             else:
                 self.summarization = None
+
         triple_to_rel = self.explore_singleton_rules(pred, candidate_triples)
 
         triple_to_rel_sorted = triple_to_rel.items()
@@ -68,9 +71,9 @@ class StochasticBuilder(ExplanationBuilder):
 
                 rule_length += 1
 
-        rule_to_rel = sorted(rule_to_rel, key=key, reverse=True)
-        relevances = [relevance for (_, relevance) in rule_to_rel]
-        variance = np.var(np.array(relevances))
+        rule_to_rel = sorted(
+            rule_to_rel, key=lambda x: (x[1], 1 / len(x[0])), reverse=True
+        )
         rule_to_rel = rule_to_rel[:k]
 
         mapped_rule_to_rel = []
@@ -81,7 +84,18 @@ class StochasticBuilder(ExplanationBuilder):
         else:
             mapped_rule_to_rel = rule_to_rel
 
-        return mapped_rule_to_rel
+        mapped_rule_to_rel = [
+            (self.dataset.labels_triples(rule), rel) for rule, rel in mapped_rule_to_rel
+        ]
+
+        end = time.time()
+        return {
+            "triple": self.dataset.labels_triple(pred),
+            "rule_to_relevance": mapped_rule_to_rel,
+            "#relevances": rels_num,
+            "execution_time": end - start,
+        }
+
 
     def explore_singleton_rules(self, pred, triples: list):
         triple_to_relevance = {}
@@ -115,7 +129,6 @@ class StochasticBuilder(ExplanationBuilder):
         for i, (rule, _) in enumerate(rules):
             if terminate:
                 break
-            
             mapped_rule = rule
             if self.summarization:
                 mapped_rule = self.summarization.map_rule(rule)

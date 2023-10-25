@@ -24,15 +24,9 @@ class NecessaryPipeline(Pipeline):
     def explain(self, pred, prefilter_k=-1):
         filtered_triples = super().explain(pred=pred, prefilter_k=prefilter_k)
 
-        rule_to_relevance = self.builder.build_explanations(pred, filtered_triples)
-        rule_to_relevance = [
-            (self.dataset.labels_triples(rule), relevance)
-            for rule, relevance in rule_to_relevance
-        ]
-        return {
-            "triple": self.dataset.labels_triple(pred),
-            "rule_to_relevance": rule_to_relevance,
-        }
+        result = self.builder.build_explanations(pred, filtered_triples)
+
+        return result
 
 
 class SufficientPipeline(Pipeline):
@@ -42,19 +36,12 @@ class SufficientPipeline(Pipeline):
     def explain(self, pred, prefilter_k=50, to_convert_k=10):
         filtered_triples = super().explain(pred, prefilter_k)
 
-        self.engine.select_entities_to_convert(
-            pred=pred, k=to_convert_k, degree_cap=200
-        )
+        self.engine.select_entities_to_convert(pred, to_convert_k, 200)
 
-        rule_to_relevance = self.builder.build_explanations(pred, filtered_triples)
+        result = self.builder.build_explanations(pred, filtered_triples)
         entities_to_conv = self.engine.entities_to_convert
         entities_to_conv = [self.dataset.id_to_entity[x] for x in entities_to_conv]
-        rule_to_relevance = [
-            (self.dataset.labels_triples(rule), relevance)
-            for rule, relevance in rule_to_relevance
-        ]
-        return {
-            "triple": self.dataset.labels_triple(pred),
-            "entities_to_convert": entities_to_conv,
-            "rule_to_relevance": rule_to_relevance,
-        }
+
+        result["entities_to_convert"] = entities_to_conv
+
+        return result
