@@ -1,9 +1,11 @@
-import json
 import click
+import json
+import os
 
 import torch
 
-from . import BASELINES, DATASETS, MODELS_PATH
+from . import BASELINES, DATASETS
+from . import MODELS_PATH, RESULTS_PATH
 from .link_prediction import MODEL_REGISTRY
 from .prefilters import (
     TOPOLOGY_PREFILTER,
@@ -136,6 +138,15 @@ def main(
     model = model_config["model"]
     model_path = model_config.get("model_path", MODELS_PATH / f"{model}_{dataset}.pt")
 
+    prefilter_short_names = {
+        TOPOLOGY_PREFILTER: "bfs",
+        TYPE_PREFILTER: "type",
+        WEIGHTED_TOPOLOGY_PREFILTER: "wbfs",
+    }
+    prefilter_short_name = prefilter_short_names[prefilter] if prefilter else "bfs"
+    summarization = summarization if summarization else "no"
+    output_dir = f"{model}_{dataset}_{mode}_{prefilter_short_name}_th{prefilter_threshold}_{summarization}"
+
     print("Reading preds...")
     if preds is None:
         preds = f"preds/{model}_{dataset}.csv"
@@ -175,9 +186,9 @@ def main(
 
         explanations.append(explanation)
 
-    with open("output.json", "w") as output:
+    os.mkdir(RESULTS_PATH / output_dir)
+    with open(RESULTS_PATH / output_dir / "output.json", "w") as output:
         json.dump(explanations, output)
-
 
 if __name__ == "__main__":
     main()

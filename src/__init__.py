@@ -1,8 +1,12 @@
 from pathlib import Path
 from typing import Any, Tuple
 
-MODELS_PATH = Path("models")
+MODELS_PATH = "models"
+MODELS_PATH = Path(MODELS_PATH)
 MAX_PROCESSES = 8
+
+RESULTS_PATH = "results"
+RESULTS_PATH = Path(RESULTS_PATH)
 
 DATA_PATH = "data"
 FB15K = "FB15k"
