@@ -3,6 +3,8 @@ import html
 import numpy as np
 import pandas as pd
 
+from tqdm import tqdm
+
 from .models import Model, TransE
 
 
@@ -14,16 +16,18 @@ class Evaluator:
     def evaluate(self, triples: np.array, write_output: bool = False):
         self.model.cuda()
 
-        batch_size = 500
+        batch_size = 256
         if len(triples) > batch_size and isinstance(self.model, TransE):
             batch_start = 0
             results = []
-            while batch_start < len(triples):
-                batch_end = min(len(triples), batch_start + batch_size)
-                cur_batch = triples[batch_start:batch_end]
-                results += self.model.predict_triples(cur_batch)
-
-                batch_start += batch_size
+            num_triples = len(triples)
+            with tqdm(total=num_triples, unit="ex", leave=False) as p:
+                while batch_start < num_triples:
+                    batch_end = min(len(triples), batch_start + batch_size)
+                    cur_batch = triples[batch_start:batch_end]
+                    results += self.model.predict_triples(cur_batch)
+                    batch_start += batch_size
+                    p.update(batch_size)
         else:
             results = self.model.predict_triples(triples)
 
