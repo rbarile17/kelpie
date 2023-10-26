@@ -3158,7 +3158,6 @@ William_James	influenced	Jimmy_Carter
 William_James	influencedBy	Ernst_Mach
 Ralf_Illenberger	associatedBand	Eberhard_Weber
 Ralf_Illenberger	birthPlace	Stuttgart
-Ralf_Illenberger	instrument	unk
 Douglas_Slocombe	birthPlace	London
 Douglas_Slocombe	deathPlace	London
 Gironde	timeZone	Central_European_Summer_Time
@@ -6147,7 +6146,6 @@ Timmy_Time	format	PAL
 James_Sykes_Gamble	award	Fellow_of_the_Royal_Society
 Cotinis	kingdom	Animal
 Sardinia	country	Italy
-The_Lords_of_Altamont	associatedBand	unk
 The_Lords_of_Altamont	associatedMusicalArtist	MC5
 The_Lords_of_Altamont	recordLabel	Sympathy_for_the_Record_Industry
 John_P._S._Gobin	battle	Spanish%E2%80%93American_War
@@ -7873,7 +7871,6 @@ Motionless_in_White	associatedMusicalArtist	In_This_Moment
 Heaven_Shall_Burn	associatedMusicalArtist	Parkway_Drive
 Heaven_Shall_Burn	associatedMusicalArtist	As_I_Lay_Dying_(band)
 Matty_Mullins	genre	Post-hardcore
-Silliman_University	affiliation	unk
 Kilinochchi_District	timeZone	Sri_Lanka
 Hanzel_und_Gretyl	formerBandMember	Dope_(band)
 Hanzel_und_Gretyl	genre	Industrial_metal
@@ -8054,7 +8051,6 @@ America%27s_Funniest_Home_Videos	format	480i
 Catasetinae	family	Epidendroideae
 Catasetinae	family	Orchid
 Ali_Daei	managerClub	Saba_Qom_F.C.
-Marty_Willson-Piper	associatedBand	unk
 Gianni_Vattimo	influencedBy	Richard_Rorty
 FIS_Alpine_World_Ski_Championships_2011	city	Garmisch-Partenkirchen
 Patricia_Kaas	hometown	Forbach
@@ -10757,7 +10753,6 @@ Long_Island_University	campus	Urban_area
 Long_Island_University	type	Private_university
 Negative_Approach	hometown	Detroit
 Passion_Pit	recordLabel	Frenchkiss_Records
-Doral,_Florida	leaderName	unk
 The_Big_Bang_(Busta_Rhymes_album)	producer	Dr._Dre
 Richmond_Kickers	ground	Richmond,_Virginia
 Chryst	hometown	Austria
@@ -13023,8 +13018,6 @@ Muammar_Gaddafi	successor	Bingu_wa_Mutharika
 Fred_Fleck	deathPlace	California
 Cimarrones_de_Sonora	league	Ascenso_MX
 Hotel_Mira	associatedBand	Hot_Hot_Heat
-Hotel_Mira	associatedBand	unk
-Hotel_Mira	associatedMusicalArtist	unk
 Cinematic_Music_Group	country	United_States
 The_Featherstones	genre	Contemporary_R%26B
 Groundislava	associatedMusicalArtist	Shlohmo
@@ -14031,7 +14024,6 @@ BBC_Worldwide	locationCity	London
 FC_Kuban-2_Krasnodar	league	Russian_Second_League
 Parametriotinae	order	Lepidoptera
 Wernya	kingdom	Animal
-Zlat%C3%A9_Moravce	mayor	unk
 Tom_Staar	associatedBand	Kryder
 Tom_Staar	associatedMusicalArtist	Wolfgang_Gartner
 Tom_Staar	genre	House_music
@@ -19790,7 +19782,6 @@ Kalamata_F.C.	ground	Kalamata
 Rusty_Cage	writer	Chris_Cornell
 Jeff_Schroeder	genre	Dream_pop
 Twilight_Circus_Dub_Sound_System	associatedMusicalArtist	Sly_Dunbar
-Twilight_Circus_Dub_Sound_System	recordLabel	unk
 Uddevalla	country	Sweden
 Waseda_University	affiliation	Association_of_Pacific_Rim_Universities
 Cold_187um	associatedBand	Eazy-E
@@ -21418,7 +21409,6 @@ Chris_Squire	associatedMusicalArtist	Yes_(band)
 Chris_Squire	associatedMusicalArtist	The_Syn
 Chris_Squire	genre	Art_rock
 Chris_Squire	instrument	Fender_Jazz_Bass
-Egis_Group	subsidiary	unk
 Misr_Lel_Makkasa_SC	league	Egyptian_Premier_League
 Royal_College_of_Music	type	Public_university
 Kierra_Sheard	associatedBand	Karen_Clark_Sheard
@@ -22273,7 +22263,6 @@ Robert_Silverberg	birthPlace	Brooklyn
 Paul_Gray_(American_musician)	instrument	Bass_guitar
 Proof_(rapper)	associatedMusicalArtist	D12
 Proof_(rapper)	birthPlace	United_States
-Proof_(rapper)	recordLabel	unk
 H%C3%A9ctor_C%C3%BAper	position	Defender_(association_football)
 H%C3%A9ctor_C%C3%BAper	team	Ferro_Carril_Oeste
 Hugh_Dancy	birthPlace	England
@@ -25028,7 +25017,6 @@ Ray_Brown_(musician)	associatedMusicalArtist	Diana_Krall
 Ray_Brown_(musician)	associatedMusicalArtist	Milt_Jackson
 Ray_Brown_(musician)	recordLabel	Verve_Records
 Ray_Brown_(musician)	recordLabel	Pablo_Records
-DZRJ-AM	broadcastNetwork	unk
 DZRJ-AM	city	Quezon_City
 DZRJ-AM	programmeFormat	Public_affairs_(broadcasting)
 DZRJ-AM	programmeFormat	Religious_broadcasting
@@ -27992,7 +27980,6 @@ John_Abercrombie_(guitarist)	associatedBand	Dave_Holland
 John_Abercrombie_(guitarist)	associatedMusicalArtist	Ralph_Towner
 John_Abercrombie_(guitarist)	genre	Avant-garde_jazz
 Draco_Rosa	genre	Electronic_music
-Draco_Rosa	recordLabel	unk
 Gram_Parsons	associatedBand	The_Flying_Burrito_Brothers
 Gram_Parsons	associatedMusicalArtist	The_Flying_Burrito_Brothers
 Romeo%27s_Daughter	associatedMusicalArtist	John_Parr
@@ -32195,7 +32182,6 @@ Chris_Funk	instrument	Piano
 Chris_Funk	occupation	Record_producer
 Chris_Julian_(producer)	associatedMusicalArtist	Chaka_Khan
 Chris_Julian_(producer)	associatedMusicalArtist	Art_Garfunkel
-Chris_Julian_(producer)	recordLabel	unk
 Chris_McCarvill	associatedMusicalArtist	Jeff_Scott_Soto
 Chris_McCarvill	associatedMusicalArtist	Eddie_Ojeda
 Chris_McCarron	award	Eclipse_Award_for_Outstanding_Apprentice_Jockey
@@ -37963,7 +37949,6 @@ Mustjala_Parish	country	Estonia
 KRTH	programmeFormat	Classic_hits
 KRU	associatedBand	Jaclyn_Victor
 KRXO-FM	broadcastNetwork	NBC_Sports_Radio
-KSOO-FM	webcast	unk
 Object_Pascal	influencedBy	Smalltalk
 Archie_Mayo	occupation	Screenwriter
 Archie_Mayo	occupation	Actor
@@ -38416,7 +38401,6 @@ Chad_Gray	genre	Groove_metal
 Chad_Gray	genre	Heavy_metal_music
 Chad_Gray	genre	Progressive_metal
 Chad_Gray	recordLabel	Epic_Records
-Greensleeves_Records	location	unk
 PLDT	type	Public_company
 Karyn_White	associatedMusicalArtist	Babyface_(musician)
 Karyn_White	associatedMusicalArtist	Tevin_Campbell
@@ -39220,8 +39204,6 @@ Looney_Tunes_Golden_Collection:_Volume_4	director	Hawley_Pratt
 Looney_Tunes_Golden_Collection:_Volume_4	director	Frank_Tashlin
 Looney_Tunes_Golden_Collection:_Volume_4	starring	Yosemite_Sam
 Loose_Music	country	United_Kingdom
-Loose_Music	distributingCompany	unk
-Loose_Music	distributingLabel	unk
 Loose_Music	genre	Alternative_rock
 Daily_Mail_and_General_Trust	industry	Insurance
 San_Bruno,_California	timeZone	Pacific_Time_Zone
@@ -41807,7 +41789,6 @@ Puerto_Rico_Air_National_Guard	country	Puerto_Rico
 Ashley_Hutchings	associatedMusicalArtist	Fairport_Convention
 Ashley_Hutchings	genre	Traditional_folk_music
 Pugwash_(band)	recordLabel	EMI
-Pugwash_(band)	recordLabel	unk
 Mark_Ledford	associatedMusicalArtist	Faith_Evans
 Mark_Ledford	associatedMusicalArtist	Bobby_McFerrin
 NK_Istra_1961	season	2015%E2%80%9316_Croatian_First_Football_League
@@ -45228,7 +45209,6 @@ WCMN-FM	sisterStation	WMIO
 WCMN_(AM)	city	Puerto_Rico
 WCZX	sisterStation	WPDH
 WDBO_(AM)	broadcastNetwork	Tampa_Bay_Lightning
-WDBO_(AM)	webcast	unk
 WDNE-FM	broadcastNetwork	ABC_News_Radio
 WDNE-FM	broadcastNetwork	West_Virginia_MetroNews
 WDNE_(AM)	broadcastArea	Elkins,_West_Virginia
@@ -45269,7 +45249,6 @@ WIN_Corporation	product	WIN_Television
 WJRR	sisterStation	WYGM
 WKJK	city	Kentucky
 WKJK	programmeFormat	Talk_radio
-WKJK	webcast	?autoplay=true
 WKKW	sisterStation	WDNE_(AM)
 WKRD_(AM)	sisterStation	WTFX-FM
 Dothan,_Alabama	isPartOf	Dale_County,_Alabama
@@ -45298,7 +45277,6 @@ Spring_Valley,_New_York	type	Administrative_divisions_of_New_York_(state)
 WRIS-FM	broadcastArea	Madison,_Wisconsin
 WRIS-FM	broadcastNetwork	CBS_Sports_Radio
 WPDH	owner	Townsquare_Media
-WPDH	webcast	unk
 WPNY-LD	sisterStation	WBGH-CD
 WPNY-LD	sisterStation	WIVT
 WPTF	broadcastNetwork	Associated_Press
@@ -45330,7 +45308,6 @@ BC_Ferries	foundationPlace	Victoria,_British_Columbia
 WVWS	broadcastArea	Upshur_County,_West_Virginia
 WVWS	broadcastNetwork	American_Public_Media
 WWTI	sisterStation	WROC-TV
-WBZY	webcast	?autoplay=true
 WXB_102	programmeFormat	Noise_pop
 WXB_102	programmeFormat	Electronic_music
 WXCC	city	Williamson,_West_Virginia

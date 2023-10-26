@@ -1376,7 +1376,6 @@ Coleen_Gray	spouse	Rod_Amateau
 Sandra_Day_O%27Connor	birthPlace	Texas
 Korpiklaani	hometown	Finland
 Combat_Records	parentCompany	Relativity_Records
-Combat_Zone_Wrestling	product	unk
 Comcast	product	Broadcasting
 Come_Fly_with_Me_(2010_TV_series)	company	BBC
 Comeback_Kid_(band)	recordLabel	Victory_Records
@@ -1663,7 +1662,6 @@ I%C5%82awa_County	type	Powiat
 Radomsko_County	part	Gmina_Przedb%C3%B3rz
 Dream_Morning_Musume	hometown	Tokyo
 Samoans	religion	Islam
-Super_Furry_Animals	associatedMusicalArtist	unk
 Satara_district	isPartOf	Maharashtra
 Wire_(band)	genre	Post-punk
 Patty_Brard	associatedMusicalArtist	Piet_Souer
@@ -2532,7 +2530,6 @@ CLMD	genre	Progressive_house
 CLMD	hometown	B%C3%A6rum
 CLMD	occupation	Record_producer
 Pandora_(service)	regionServed	Australia
-Nahuan_languages	languageRegulator	unk
 Nahuan_languages	spokenIn	Veracruz
 Nahuan_languages	spokenIn	Morelos
 Nahuan_languages	spokenIn	Michoac%C3%A1n
@@ -7220,7 +7217,6 @@ Guillemots_(band)	recordLabel	Fantastic_Plastic_Records
 John_Singer_Sargent	influencedBy	Frans_Hals
 Sesame_Street	genre	Animation
 Sesame_Street	location	New_York_City
-Harborough_District	leaderName	unk
 International_Security_Assistance_Force	garrison	Afghanistan
 Chinese_University_of_Hong_Kong	affiliation	International_Association_of_Universities
 Chris_Brown	associatedMusicalArtist	Kevin_McCall
@@ -10572,7 +10568,6 @@ Winrich_Kolbe	occupation	Television_director
 Xavier_Naidoo	occupation	Singer-songwriter
 Irvine_Welsh	influencedBy	Victor_Hugo
 Irvine_Welsh	influencedBy	James_Joyce
-Doral,_Florida	leaderName	unk
 Boronia	kingdom	Plant
 Boronia	order	Rosids
 The_Big_Bang_(Busta_Rhymes_album)	subsequentWork	Back_on_My_B.S.
@@ -12860,7 +12855,6 @@ Ricky_Dillard	genre	Urban_contemporary_gospel
 Ethan_Farmer	associatedBand	Patti_LaBelle
 Ethan_Farmer	genre	Rock_music
 Muammar_Gaddafi	militaryRank	Colonel
-Hotel_Mira	associatedBand	unk
 Hotel_Mira	genre	Post-punk_revival
 Cinematic_Music_Group	genre	Hip_hop_music
 Groundislava	associatedBand	D33J
@@ -18049,7 +18043,6 @@ North_Brookfield,_Massachusetts	isPartOf	Worcester_County,_Massachusetts
 Fir	order	Pinales
 Emphatic_(band)	associatedBand	Fuel_(band)
 Alexander_H._Smith	deathPlace	Ann_Arbor,_Michigan
-Greenlandic_language	languageRegulator	en
 Adrienne_Barbeau	spouse	John_Carpenter
 Eliza_(English_singer)	genre	Indie_pop
 Brookfield,_Massachusetts	isPartOf	Massachusetts
@@ -21251,7 +21244,6 @@ Eel_River_(California)	mouthPlace	Humboldt_County,_California
 Eel_River_(California)	state	California
 Eerie_Von	genre	Country_music
 Mir_Pur	country	Pakistan
-Egis_Group	subsidiary	unk
 Buddah_Records	location	New_York_City
 Royal_College_of_Music	city	London
 The_Green_Hornet_(TV_series)	director	Leslie_H._Martinson
@@ -23973,7 +23965,6 @@ Mason_Williams	recordLabel	American_Gramaphone
 Ajith_Kumar	residence	Chennai
 Happy_hardcore	instrument	Keyboard_instrument
 Portello_(district_of_Milan)	isPartOf	Milan
-Sindhi_language	languageRegulator	unk
 Poster_Children	genre	Alternative_rock
 Poster_Children	recordLabel	Reprise_Records
 Ace_Hood	associatedBand	DJ_Khaled
@@ -27437,7 +27428,6 @@ Dima_Bilan	associatedBand	Timbaland
 Jay_Park	occupation	Singer-songwriter
 Los_Parientes_Pobres	genre	Romance_film
 A1_autostrada_(Poland)	city	%C5%81%C3%B3d%C5%BA
-Sangli	governingBody	unk
 Sangli	timeZone	Indian_Standard_Time
 Naoshi_Mizuta	occupation	Composer
 Naoshi_Mizuta	recordLabel	Square_Enix
@@ -29523,7 +29513,6 @@ Bob_Daisley	associatedMusicalArtist	Chicken_Shack
 Bob_Daisley	genre	Heavy_metal_music
 Alex_Torres_(musician)	associatedMusicalArtist	The_Dead_Rabbitts
 Alex_Weir_(footballer,_born_1916)	team	Ballymena_United_F.C.
-Alex_Wong_(producer,_musician)	associatedMusicalArtist	unk
 Steve_Cropper	associatedBand	Booker_T._%26_the_M.G.%27s
 Steve_Cropper	associatedMusicalArtist	Tower_of_Power
 FK_Daugava_(2003)	ground	Riga
@@ -37917,7 +37906,6 @@ KL_FM	sisterStation	Pahang_FM
 Type_O_Negative	associatedBand	Danzig_(band)
 Type_O_Negative	associatedBand	Carnivore_(band)
 KNBR_(AM)	sisterStation	KSAN_(FM)
-KNBR_(AM)	webcast	?autoplay=true
 KNML	broadcastArea	Albuquerque,_New_Mexico
 KNX_(AM)	sisterStation	KCBS-TV
 KNX_(AM)	sisterStation	KCAL-TV
@@ -37946,7 +37934,6 @@ Hitachi,_Ibaraki	country	Japan
 Hitachi,_Ibaraki	type	Cities_of_Japan
 KTVB	formerBroadcastNetwork	American_Broadcasting_Company
 KUGN	programmeFormat	Talk_radio
-KUGN	webcast	?autoplay=true
 KVAZ	sisterStation	KOUI_(FM)
 KVAZ	sisterStation	KOSG
 KVEO-TV	formerBroadcastNetwork	UPN
@@ -39123,7 +39110,6 @@ Inspector_Gadget_(1983_TV_series)	company	France_3
 Inspector_Gadget_(1983_TV_series)	country	Canada
 Inspector_Gadget_(1983_TV_series)	voice	Dan_Hennessey
 Clark_Fork_River	sourceMountain	Butte,_Montana
-Franklin_%26_Marshall_College	athletics	unk
 Little_Birdy	genre	Alternative_rock
 Little_Birdy	recordLabel	Eleven:_A_Music_Company
 Little_Bruce	genre	West_Coast_hip_hop
@@ -41278,7 +41264,6 @@ Peter_Miles_(record_producer)	genre	Rock_music
 Peter_Mulvey	birthPlace	Wisconsin
 Peter_Mulvey	birthPlace	United_States
 Peter_Mulvey	birthPlace	Milwaukee
-Peter_Mulvey	recordLabel	unk
 Peter_Mutharika	birthPlace	Nyasaland
 Gerrit_Zalm	occupation	Board_of_directors
 Gerrit_Zalm	successor	Andr%C3%A9_Rouvoet
@@ -42555,7 +42540,6 @@ Mainland,_Shetland	archipelago	Shetland
 S._Carey	genre	Baroque_pop
 S._Ramachandra	birthPlace	Bangalore
 The_Great_Society_(band)	associatedBand	Starship_(band)
-S2S_(Japanese_record_label)	subsidiary	index.html
 Payphone_(song)	writer	Adam_Levine
 SCQ_Reload	location	Seoul
 Estonian_Reform_Party	country	Estonia
@@ -44589,7 +44573,6 @@ Todd_Fisher	residence	Las_Vegas_Valley
 Todd_Hunter	knownFor	Dragon_(band)
 Todd_Kabel	race	King%27s_Plate
 Todd_Phillips_(musician)	occupation	Musician
-Todd_Tobias	associatedBand	unk
 Todd_Youth	associatedMusicalArtist	Son_of_Sam_(band)
 Todd_Youth	associatedMusicalArtist	Danzig_(band)
 Todd_Youth	instrument	Guitar
@@ -45129,7 +45112,6 @@ Brujeria_(band)	genre	Grindcore
 WHOI_(TV)	formerBroadcastNetwork	CBS
 WHRF	sisterStation	WHRL
 WHRG	sisterStation	WHRF
-WHRO-FM	webcast	listen.pls
 WHRX	broadcastNetwork	Public_Radio_International
 WHRX	sisterStation	WHRE
 WINC_(AM)	broadcastNetwork	Salem_Radio_Network
@@ -45173,7 +45155,6 @@ John_W._Geary	deathPlace	Harrisburg,_Pennsylvania
 John_W._Geary	militaryBranch	Union_Army
 John_W._Geary	party	Democratic_Party_(United_States)
 WRXL	sisterStation	WBTJ
-WSB_(AM)	webcast	unk
 WSJU-TV	formerBroadcastNetwork	Univision
 Songkhla	timeZone	UTC%2B07:00
 BBC_Radio_4	broadcastArea	United_Kingdom
@@ -45182,8 +45163,6 @@ WSWG_(TV)	location	Albany,_Georgia
 WSWG_(TV)	locationCountry	United_States
 WSWG_(TV)	owningCompany	Gray_Television
 WTFX-FM	programmeFormat	Modern_rock
-WTFX-FM	webcast	?autoplay=true
-WTKS-FM	webcast	?autoplay=true
 WTOK-FM	broadcastArea	Puerto_Rico
 WTOK-FM	sisterStation	WMIO
 WUTR	broadcastNetwork	MyNetworkTV
@@ -45207,7 +45186,6 @@ WWTI	country	United_States
 WBZY	city	Canton,_Georgia
 WXB_102	programmeFormat	Indie_pop
 WXTB	programmeFormat	All-news_radio
-WXTB	webcast	?autoplay=true
 WXYT-FM	sisterStation	WXYT_(AM)
 WBTS-CD	locationCountry	United_States
 Tuscaloosa,_Alabama	isPartOf	Tuscaloosa_County,_Alabama
@@ -46768,7 +46746,6 @@ Franz_Antel	deathPlace	Vienna
 Mahlon_Dickerson	profession	Judge
 Mahlon_Dickerson	profession	Politician
 Michael_Hoenig	associatedBand	Tangerine_Dream
-Ukrainian_language	languageRegulator	unk
 Blace	timeZone	Central_European_Time
 Alexandria,_Virginia	country	United_States
 Fritz_Wendhausen	nationality	Germany
@@ -47327,7 +47304,6 @@ Ali_(film)	musicComposer	Pieter_Bourke
 Ali_(film)	musicComposer	Lisa_Gerrard
 Ali_(film)	starring	Jon_Voight
 One_Sweet_Day	format	Maxi_single
-Communist_Party_of_Bohemia_and_Moravia	youthWing	unk
 Battle_of_the_Alma	isPartOfMilitaryConflict	Crimean_War
 Tomasz%C3%B3w_County,_Lublin_Voivodeship	country	Poland
 Bridge_9_Records	distributingCompany	Revelation_Records
@@ -48977,7 +48953,6 @@ The_Dalles,_Oregon	leaderName	Democratic_Party_(United_States)
 Morecambe	district	City_of_Lancaster
 Orofino,_Idaho	timeZone	Pacific_Time_Zone
 New_Castle,_Indiana	isPartOf	Henry_County,_Indiana
-Port_Orange,_Florida	leaderName	unk
 Conyers,_Georgia	country	United_States
 Pat_Metheny_Group	genre	Crossover_jazz
 Pahrump,_Nevada	country	United_States
