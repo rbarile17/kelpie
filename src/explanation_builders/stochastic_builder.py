@@ -79,14 +79,24 @@ class StochasticBuilder(ExplanationBuilder):
         mapped_rule_to_rel = []
         if self.summarization:
             for rule, rel in rule_to_rel:
-                rule = self.summarization.map_rule(rule)
-                mapped_rule_to_rel.append((rule, rel))
+                mapped_rule = self.summarization.map_rule(rule)
+                mapped_rule = self.dataset.labels_triples(mapped_rule)
+
+                labels_rule = []
+                for q_triple in rule:
+                    s_part, p, o_part = q_triple
+                    s_part = [self.dataset.id_to_entity[e] for e in s_part]
+                    o_part = [self.dataset.id_to_entity[e] for e in o_part]
+                    p = self.dataset.id_to_relation[p]
+                    labels_rule.append((s_part, p, o_part))
+                
+                mapped_rule_to_rel.append((labels_rule, mapped_rule, rel))
         else:
             mapped_rule_to_rel = rule_to_rel
 
-        mapped_rule_to_rel = [
-            (self.dataset.labels_triples(rule), rel) for rule, rel in mapped_rule_to_rel
-        ]
+            mapped_rule_to_rel = [
+                (self.dataset.labels_triples(rule), rel) for rule, rel in mapped_rule_to_rel
+            ]
 
         end = time.time()
         return {
