@@ -60,7 +60,7 @@ class RelevanceEngine:
         self.model.eval()
 
         s, p, o = pred
-        perspective_entity = p
+        perspective_entity = s
 
         overall_entities = []
 
@@ -89,7 +89,7 @@ class RelevanceEngine:
             return []
         triples = [(entity, p, o) for entity in entities]
 
-        batch_size = 500
+        batch_size = 256
         batches_scores = []
         batch_start = 0
         while batch_start < len(triples):
