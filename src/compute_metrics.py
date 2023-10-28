@@ -1,6 +1,7 @@
 import json
 import argparse
 
+from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -12,6 +13,12 @@ def parse_args():
         type=str,
         choices=["necessary", "sufficient"],
         help="The mode for which to plot the explanation lengths: necessary or sufficient",
+    )
+
+    parser.add_argument(
+        "--explanations_path",
+        type=str,
+        help="Path of the explanations to evaluate.",
     )
 
     return parser.parse_args()
@@ -41,7 +48,9 @@ def mr(ranks):
 
 def main(args):
     mode = args.mode
-    explanations_filepath = "output_end_to_end.json"
+    explanations_path = Path(args.explanations_path)
+
+    explanations_filepath = explanations_path / "output_end_to_end.json"
 
     with open(explanations_filepath, "r") as input_file:
         triple_to_details = json.load(input_file)

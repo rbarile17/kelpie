@@ -6,18 +6,26 @@ import numpy
 import torch
 
 from collections import defaultdict
+from pathlib import Path
+from tqdm import tqdm
 
 from . import DATASETS, MODELS_PATH
 from .data import MANY_TO_ONE, ONE_TO_ONE
 from .link_prediction import MODEL_REGISTRY
 
 from .data import Dataset
+from .link_prediction.models import TransE
 from .utils import set_seeds
 
 modes = ["necessary", "sufficient"]
 
 
 @click.command()
+@click.option(
+    "--explanations_path",
+    type=click.Path(exists=True),
+    help="Path of the explanations to verify.",
+)
 @click.option("--dataset", type=click.Choice(DATASETS))
 @click.option(
     "--model_config",
@@ -27,12 +35,13 @@ modes = ["necessary", "sufficient"]
 @click.option("--mode", type=click.Choice(modes))
 def main(
     dataset,
+    explanations_path,
     model_config,
     mode,
 ):
     set_seeds(42)
-
-    with open("output.json", "r") as input_file:
+    explanations_path = Path(explanations_path)
+    with open(explanations_path / "output.json", "r") as input_file:
         explanations = json.load(input_file)
 
     model_config = json.load(open(model_config, "r"))
@@ -104,7 +113,20 @@ def main(
 
         new_dataset.add_training_triples(triples_to_add)
 
-        results = model.predict_triples(numpy.array(triples_to_convert))
+        batch_size = 256
+        if len(triples_to_convert) > batch_size and isinstance(model, TransE):
+            batch_start = 0
+            results = []
+            num_triples = len(triples_to_convert)
+            with tqdm(total=num_triples, unit="ex", leave=False) as p:
+                while batch_start < num_triples:
+                    batch_end = min(len(triples_to_convert), batch_start + batch_size)
+                    cur_batch = triples_to_convert[batch_start:batch_end]
+                    results += model.predict_triples(numpy.array(cur_batch))
+                    batch_start += batch_size
+                    p.update(batch_size)
+        else:
+            results = model.predict_triples(numpy.array(triples_to_convert))
         results = {
             triple: result for triple, result in zip(triples_to_convert, results)
         }
@@ -112,11 +134,24 @@ def main(
         new_model = model_class(dataset=new_dataset, hp=model_hp, init_random=True)
         hp = model_config["training"]
         optimizer_params = optimizer_class.get_hyperparams_class()(**hp)
-        optimizer = optimizer_class(model=model, hp=optimizer_params, verbose=False)
+        optimizer = optimizer_class(model=model, hp=optimizer_params)
 
         optimizer.train(training_triples=new_dataset.training_triples)
         new_model.eval()
-        new_results = new_model.predict_triples(numpy.array(triples_to_convert))
+        batch_size = 64
+        if len(triples_to_convert) > batch_size and isinstance(new_model, TransE):
+            batch_start = 0
+            new_results = []
+            num_triples = len(triples_to_convert)
+            with tqdm(total=num_triples, unit="ex", leave=False) as p:
+                while batch_start < num_triples:
+                    batch_end = min(len(triples_to_convert), batch_start + batch_size)
+                    cur_batch = triples_to_convert[batch_start:batch_end]
+                    new_results += new_model.predict_triples(numpy.array(cur_batch))
+                    batch_start += batch_size
+                    p.update(batch_size)
+        else:
+            new_results = new_model.predict_triples(numpy.array(triples_to_convert))
         new_results = {
             triple: result for triple, result in zip(triples_to_convert, new_results)
         }
@@ -162,7 +197,7 @@ def main(
         for explanation in explanations:
             pred = dataset.ids_triple(explanation["triple"])
             preds.append(pred)
-            best_rule, _ = explanation["rule_to_relevance"][0]
+            _, best_rule, _ = explanation["rule_to_relevance"][0]
             best_rule = [dataset.ids_triple(triple) for triple in best_rule]
 
             triple_to_best_rule[pred] = best_rule
@@ -221,7 +256,7 @@ def main(
 
             evaluations.append(evaluation)
 
-    with open("output_end_to_end.json", "w") as outfile:
+    with open(explanations_path / "output_end_to_end.json", "w") as outfile:
         json.dump(evaluations, outfile, indent=4)
 
 
