@@ -9,7 +9,8 @@ from collections import defaultdict
 from pykeen.datasets import get_dataset
 
 from .names import ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
-from .. import DB100K_PATH, DB100K_MAPPED_PATH, DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
+from .. import DB100K_PATH, DB100K_MAPPED_PATH, DB100K_REASONED_PATH
+from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
 
 
 class Dataset:
@@ -21,6 +22,23 @@ class Dataset:
                 testing=DB100K_MAPPED_PATH / "test.txt",
                 validation=DB100K_MAPPED_PATH / "valid.txt",
             )
+
+            e_sem = pd.read_csv(
+                DB100K_PATH / "entities.csv",
+                converters={"classes": literal_eval},
+            )
+            e_sem["entity"] = e_sem["entity"].map(self.entity_to_id.get)
+            e_sem["classes_str"] = e_sem["classes"].map(", ".join)
+
+            e_sem_impl = pd.read_csv(
+                DB100K_REASONED_PATH / "entities.csv",
+                converters={"classes": literal_eval},
+            )
+            e_sem_impl["entity"] = e_sem_impl["entity"].map(self.entity_to_id.get)
+            e_sem_impl["classes_str"] = e_sem_impl["classes"].map(", ".join)
+
+            self.entities_semantic = e_sem
+            self.entities_semantic_impl = e_sem_impl
         elif dataset == "DBpedia50":
             self.dataset = get_dataset(
                 training=DBPEDIA50_PATH / "train.txt",
