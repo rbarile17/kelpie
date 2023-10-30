@@ -50,9 +50,17 @@ class TransE(Model):
         rel = self.relation_embeddings[triples[:, 1]]
         all_rhs = self.entity_embeddings
 
-        translation = lhs + rel
-        all_scores = (translation.unsqueeze(0) - all_rhs.unsqueeze(1))
-        all_scores = all_scores.norm(p=self.norm, dim=2)
+        all_rhs_batches = torch.split(all_rhs, 2048, dim=0)
+
+        all_scores_batches = []
+
+        for batch in all_rhs_batches:
+            translation = lhs + rel
+            batch_scores = translation.unsqueeze(0) - batch.unsqueeze(1)
+            batch_scores = batch_scores.norm(p=self.norm, dim=2)
+            all_scores_batches.append(batch_scores)
+
+        all_scores = torch.cat(all_scores_batches, dim=0)
 
         return all_scores.transpose(0, 1)
 
