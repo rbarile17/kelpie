@@ -161,6 +161,7 @@ cython_debug/
 
 .vscode/
 /data/DB100K/DB100K.owl
+/data/DB100K/reasoned/DB100K_reasoned.owl
 /models/
 /results/
 notes.txt
