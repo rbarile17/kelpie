@@ -25,18 +25,17 @@ class Model(nn.Module):
     def predict_triples(self, triples):
         direct_triples = triples
         assert np.all(direct_triples[:, 1] < self.dataset.num_relations)
-        direct_scores, tail_ranks, tail_preds = self.predict_tails(direct_triples)
+        direct_scores, tail_ranks = self.predict_tails(direct_triples)
 
         inverse_triples = self.dataset.invert_triples(direct_triples)
-        inverse_scores, head_ranks, head_preds = self.predict_tails(inverse_triples)
+        inverse_scores, head_ranks = self.predict_tails(inverse_triples)
 
         results = []
         for i in range(direct_triples.shape[0]):
             score = {"tail": direct_scores[i], "head": inverse_scores[i]}
             rank = {"tail": int(tail_ranks[i]), "head": int(head_ranks[i])}
-            prediction = {"tail": tail_preds[i], "head": head_preds[i]}
 
-            results.append({"score": score, "rank": rank, "prediction": prediction})
+            results.append({"score": score, "rank": rank})
 
         return results
 
@@ -66,25 +65,7 @@ class Model(nn.Module):
 
             scores = [targets[i, 0] for i in range(len(triples))]
 
-            predictions = []
-            for i, (head, rel, tail) in enumerate(triples):
-                if self.is_minimizer():
-                    predicted_tails = np.where(all_scores[i] < 1e6)[0]
-                else:
-                    predicted_tails = np.where(all_scores[i] > -1e6)[0]
-                predicted_tails_scores = all_scores[i, predicted_tails]
-
-                permutation = np.argsort(-predicted_tails_scores)
-                predicted_tails_scores = predicted_tails_scores[permutation]
-                predicted_tails = predicted_tails[permutation]
-
-                j = np.searchsorted(-predicted_tails_scores, -scores[i])
-
-                predicted_tails = np.insert(predicted_tails, j, tail)
-
-                predictions.append(predicted_tails)
-
-        return scores, ranks, predictions
+        return scores, ranks
 
     def predict_triple(self, triple):
         assert triple[1] < self.dataset.num_relations
