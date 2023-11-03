@@ -89,35 +89,34 @@ class RelevanceEngine:
             return []
         triples = [(entity, p, o) for entity in entities]
 
-        batch_size = 256
-        batches_scores = []
+        batch_size = 8
         batch_start = 0
         while batch_start < len(triples):
             batch_end = min(len(triples), batch_start + batch_size)
             batch = triples[batch_start:batch_end]
             batch_scores = self.model.all_scores(triples=numpy.array(batch))
             batch_scores = batch_scores.detach().cpu().numpy()
-            batches_scores.append(batch_scores)
+
+            j = 0
+            for i in range(batch_start, batch_end):
+                entity = entities[i]
+                s, p, o = triples[i]
+                triple_scores = batch_scores[j]
+
+                filter_out = self.dataset.to_filter.get((s, p), [])
+                filter_out = torch.LongTensor(filter_out)
+
+                target_score = triple_scores[o]
+                if self.model.is_minimizer():
+                    triple_scores[filter_out] = 1e6
+                    if 1e6 > target_score > numpy.min(triple_scores):
+                        overall_entities.append(entity)
+                else:
+                    triple_scores[filter_out] = -1e6
+                    if -1e6 < target_score < numpy.max(triple_scores):
+                        overall_entities.append(entity)
+                j += 1
+
             batch_start += batch_size
-        scores = numpy.vstack(batches_scores)
-
-        for i in range(len(entities)):
-            entity = entities[i]
-            cur_s, cur_p, cur_o = triples[i]
-            triple_scores = scores[i]
-
-            filter_out = self.dataset.to_filter.get((cur_s, cur_p), [])
-            filter_out = torch.LongTensor(filter_out)
-
-            target_score = triple_scores[cur_o]
-            if self.model.is_minimizer():
-                triple_scores[filter_out] = 1e6
-                if 1e6 > target_score > numpy.min(triple_scores):
-                    overall_entities.append(entity)
-            else:
-                triple_scores[filter_out] = -1e6
-                if -1e6 < target_score < numpy.max(triple_scores):
-                    overall_entities.append(entity)
-
         entities = random.sample(overall_entities, k=min(k, len(overall_entities)))
         self.entities_to_convert = entities
