@@ -11,12 +11,19 @@ from pykeen.datasets import get_dataset
 from .names import ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY
 from .. import DB100K_PATH, DB100K_MAPPED_PATH, DB100K_REASONED_PATH
 from .. import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
+from .. import YAGO4_20_PATH, YAGO4_20_REASONED_PATH
 
 
 class Dataset:
     def __init__(self, dataset: str):
         self.name = dataset
-        if dataset == "DB100K":
+        if dataset == "YAGO4-20":
+            self.dataset = get_dataset(
+                training=YAGO4_20_PATH / "train.txt",
+                testing=YAGO4_20_PATH / "test.txt",
+                validation=YAGO4_20_PATH / "valid.txt",
+            )
+        elif dataset == "DB100K":
             self.dataset = get_dataset(
                 training=DB100K_MAPPED_PATH / "train.txt",
                 testing=DB100K_MAPPED_PATH / "test.txt",
