@@ -4,6 +4,8 @@ import os
 
 import torch
 
+from pathlib import Path
+
 from . import BASELINES, DATASETS
 from . import MODELS_PATH, RESULTS_PATH
 from .link_prediction import MODEL_REGISTRY
@@ -177,6 +179,8 @@ def main(
         summarization,
     )
 
+    Path(RESULTS_PATH / output_dir).mkdir(exist_ok=True)
+
     explanations = []
     for pred in preds:
         s, p, o = pred
@@ -186,9 +190,8 @@ def main(
 
         explanations.append(explanation)
 
-    os.mkdir(RESULTS_PATH / output_dir)
-    with open(RESULTS_PATH / output_dir / "output.json", "w") as output:
-        json.dump(explanations, output)
+        with open(RESULTS_PATH / output_dir / "output.json", "w") as output:
+            json.dump(explanations, output)
 
 if __name__ == "__main__":
     main()
