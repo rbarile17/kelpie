@@ -1,0 +1,15 @@
+{
+    "model": "TransE",
+    "model_params": {
+        "dimension": 128,
+        "norm": 2
+    },
+    "training": {
+        "batch_size": 2048,
+        "epochs": 59,
+        "lr": 0.01,
+        "margin": 10,
+        "negative_triples_ratio": 5,
+        "regularizer_weight": 0.0
+    }
+}
