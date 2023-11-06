@@ -23,6 +23,23 @@ class Dataset:
                 testing=YAGO4_20_PATH / "test.txt",
                 validation=YAGO4_20_PATH / "valid.txt",
             )
+
+            e_sem = pd.read_csv(
+                YAGO4_20_PATH / "entities.csv",
+                converters={"classes": literal_eval},
+            )
+            e_sem["entity"] = e_sem["entity"].map(self.entity_to_id.get)
+            e_sem["classes_str"] = e_sem["classes"].map(", ".join)
+
+            e_sem_impl = pd.read_csv(
+                YAGO4_20_REASONED_PATH / "entities.csv",
+                converters={"classes": literal_eval},
+            )
+            e_sem_impl["entity"] = e_sem_impl["entity"].map(self.entity_to_id.get)
+            e_sem_impl["classes_str"] = e_sem_impl["classes"].map(", ".join)
+
+            self.entities_semantic = e_sem
+            self.entities_semantic_impl = e_sem_impl
         elif dataset == "DB100K":
             self.dataset = get_dataset(
                 training=DB100K_MAPPED_PATH / "train.txt",
