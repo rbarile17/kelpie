@@ -4,6 +4,8 @@ import torch
 
 from collections import defaultdict
 
+from tqdm import tqdm
+
 from ..data import Dataset, ONE_TO_ONE, MANY_TO_ONE
 from ..link_prediction.models import Model
 
@@ -89,34 +91,36 @@ class RelevanceEngine:
             return []
         triples = [(entity, p, o) for entity in entities]
 
-        batch_size = 8
+        batch_size = 4
         batch_start = 0
-        while batch_start < len(triples):
-            batch_end = min(len(triples), batch_start + batch_size)
-            batch = triples[batch_start:batch_end]
-            batch_scores = self.model.all_scores(triples=numpy.array(batch))
-            batch_scores = batch_scores.detach().cpu().numpy()
+        with tqdm(total=len(triples), unit="ex", leave=False) as bar:
+            while batch_start < len(triples):
+                batch_end = min(len(triples), batch_start + batch_size)
+                batch = triples[batch_start:batch_end]
+                batch_scores = self.model.all_scores(triples=numpy.array(batch))
+                batch_scores = batch_scores.detach().cpu().numpy()
 
-            j = 0
-            for i in range(batch_start, batch_end):
-                entity = entities[i]
-                s, p, o = triples[i]
-                triple_scores = batch_scores[j]
+                j = 0
+                for i in range(batch_start, batch_end):
+                    entity = entities[i]
+                    s, p, o = triples[i]
+                    triple_scores = batch_scores[j]
 
-                filter_out = self.dataset.to_filter.get((s, p), [])
-                filter_out = torch.LongTensor(filter_out)
+                    filter_out = self.dataset.to_filter.get((s, p), [])
+                    filter_out = torch.LongTensor(filter_out)
 
-                target_score = triple_scores[o]
-                if self.model.is_minimizer():
-                    triple_scores[filter_out] = 1e6
-                    if 1e6 > target_score > numpy.min(triple_scores):
-                        overall_entities.append(entity)
-                else:
-                    triple_scores[filter_out] = -1e6
-                    if -1e6 < target_score < numpy.max(triple_scores):
-                        overall_entities.append(entity)
-                j += 1
+                    target_score = triple_scores[o]
+                    if self.model.is_minimizer():
+                        triple_scores[filter_out] = 1e6
+                        if 1e6 > target_score > numpy.min(triple_scores):
+                            overall_entities.append(entity)
+                    else:
+                        triple_scores[filter_out] = -1e6
+                        if -1e6 < target_score < numpy.max(triple_scores):
+                            overall_entities.append(entity)
+                    j += 1
 
-            batch_start += batch_size
+                batch_start += batch_size
+                bar.update(batch_size)
         entities = random.sample(overall_entities, k=min(k, len(overall_entities)))
         self.entities_to_convert = entities
