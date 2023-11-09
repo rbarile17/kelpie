@@ -158,7 +158,7 @@ class ConvE(Model):
         return pred
 
     def predict_tails(self, triples):
-        scores, ranks, pred_out = [], [], []
+        scores, ranks = [], []
 
         batch_size = 128
         for i in range(0, triples.shape[0], batch_size):
@@ -177,12 +177,11 @@ class ConvE(Model):
             _, sorted_indexes = torch.sort(all_scores, dim=1, descending=True)
             sorted_indexes = sorted_indexes.cpu().numpy()
 
-            pred_out.extend([row for row in sorted_indexes])
             for row in range(batch.shape[0]):
                 rank = np.where(sorted_indexes[row] == objects[row].item())[0][0]
                 ranks.append(rank + 1)
 
-        return scores, ranks, pred_out
+        return scores, ranks
 
     def kelpie_model_class(self):
         return KelpieConvE
@@ -213,11 +212,13 @@ class KelpieConvE(KelpieModel):
         self.model.relation_embeddings = frozen_relation_embs
 
         self.model.convolutional_layer = copy.deepcopy(model.convolutional_layer)
-        self.model.convolutional_layer.requires_grad = False
+        self.model.convolutional_layer.weight.requires_grad = False
+        self.model.convolutional_layer.bias.requires_grad = False
         self.model.convolutional_layer.eval()
 
         self.model.hidden_layer = copy.deepcopy(model.hidden_layer)
-        self.model.hidden_layer.requires_grad = False
+        self.model.hidden_layer.weight.requires_grad = False
+        self.model.hidden_layer.bias.requires_grad = False
         self.model.hidden_layer.eval()
 
         self.model.batch_norm_1 = copy.deepcopy(model.batch_norm_1)
@@ -234,13 +235,3 @@ class KelpieConvE(KelpieModel):
         self.model.batch_norm_3.weight.requires_grad = False
         self.model.batch_norm_3.bias.requires_grad = False
         self.model.batch_norm_3.eval()
-
-    def parameters(self):
-        params = self.model.convolutional_layer.parameters()
-        params = list(params)
-        hidden_layer_params = self.model.hidden_layer.parameters()
-        hidden_layer_params = list(hidden_layer_params)
-        params.extend(hidden_layer_params)
-        params.append(self.kelpie_entity_emb)
-
-        return params
