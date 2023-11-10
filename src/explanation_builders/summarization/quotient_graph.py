@@ -2,7 +2,7 @@ import itertools
 
 import networkx as nx
 
-from networkx.drawing.nx_agraph import to_agraph
+# from networkx.drawing.nx_agraph import to_agraph
 
 
 class QuotientGraph:
@@ -27,19 +27,19 @@ class QuotientGraph:
                     )
         return quotient
 
-    def plot(self, graph, filename="graph", format="svg", quotient=False):
-        agraph = to_agraph(graph)
-        agraph.graph_attr["rankdir"] = "LR"
-        agraph.graph_attr["pad"] = 0.01
+    # def plot(self, graph, filename="graph", format="svg", quotient=False):
+    #     agraph = to_agraph(graph)
+    #     agraph.graph_attr["rankdir"] = "LR"
+    #     agraph.graph_attr["pad"] = 0.01
 
-        for node in agraph.nodes():
-            node.attr["shape"] = "rectangle"
-            node.attr["style"] = "rounded"
-        for edge in agraph.edges():
-            edge.attr["arrowsize"] = 0.3
-            edge.attr["color"] = "red"
+    #     for node in agraph.nodes():
+    #         node.attr["shape"] = "rectangle"
+    #         node.attr["style"] = "rounded"
+    #     for edge in agraph.edges():
+    #         edge.attr["arrowsize"] = 0.3
+    #         edge.attr["color"] = "red"
 
-        agraph.draw(f"pictures/{filename}.{format}", prog="dot", format=format)
+    #     agraph.draw(f"pictures/{filename}.{format}", prog="dot", format=format)
 
     def set_quotient_triple_to_triples(self, q_triples, filter):
         self.quotient_triple_to_triples = {}
