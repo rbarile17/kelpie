@@ -34,9 +34,9 @@ class Bisimulation(QuotientGraph):
 
     def summarize(self, entity, triples):
         subgraph = self.dataset.get_subgraph(entity, triples=triples, depth=self.depth)
-        self.plot(subgraph, filename="subgraph")
+        # self.plot(subgraph, filename="subgraph")
         digraph = self.preprocess(subgraph)
-        self.plot(digraph, filename="digraph")
+        # self.plot(digraph, filename="digraph")
         partition = self.dataset.get_equivalence_classes(subgraph)
 
         for node in digraph.nodes():
@@ -49,7 +49,7 @@ class Bisimulation(QuotientGraph):
         bisimulation = [cl for cl in bisimulation if not contain_tuples(cl)]
 
         quotient_graph = self.build_quotient_graph(subgraph, bisimulation, all)
-        self.plot(quotient_graph, filename="bisimulation")
+        # self.plot(quotient_graph, filename="bisimulation")
 
         q_triples = [(s, l, o) for s, o, l in quotient_graph.edges(data="id")]
         filtered_q_triples = []
