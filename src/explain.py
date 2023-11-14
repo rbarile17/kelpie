@@ -107,6 +107,12 @@ def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi, summariza
     default=10,
     help="Number of entities to convert (sufficient mode only).",
 )
+@click.option(
+    "--skip",
+    type=int,
+    default=-1,
+    help="Number of predictions to skip.",
+)
 @click.option("--baseline", type=click.Choice(BASELINES))
 @click.option("--mode", type=click.Choice(modes))
 @click.option(
@@ -133,6 +139,7 @@ def main(
     relevance_threshold,
     prefilter_threshold,
     summarization,
+    skip
 ):
     set_seeds(42)
 
@@ -182,9 +189,11 @@ def main(
     Path(RESULTS_PATH / output_dir).mkdir(exist_ok=True)
 
     explanations = []
-    for pred in preds:
+    for i, pred in enumerate(preds):
+        if i <= skip:
+            continue
         s, p, o = pred
-        print(f"\nExplaining pred: <{s}, {p}, {o}>")
+        print(f"\nExplaining pred {i}: <{s}, {p}, {o}>")
         pred = dataset.ids_triple(pred)
         explanation = pipeline.explain(pred=pred, prefilter_k=prefilter_threshold)
 
