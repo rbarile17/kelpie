@@ -57,7 +57,7 @@ class BCEOptimizer(Optimizer):
         er_vocab = self.extract_er_vocab(training_triples)
         er_vocab_pairs = list(er_vocab.keys())
 
-        self.model.cuda()
+        # self.model.cuda()
 
         best_valid_metric = None
         epochs_without_improvement = 0
@@ -75,7 +75,7 @@ class BCEOptimizer(Optimizer):
 
                     if trial.should_prune():
                         raise optuna.exceptions.TrialPruned()
-                    
+
                 if best_valid_metric is None or metrics["h1"] > best_valid_metric:
                     best_valid_metric = metrics["h1"]
                     epochs_without_improvement = 0
@@ -84,7 +84,6 @@ class BCEOptimizer(Optimizer):
 
                 if epochs_without_improvement >= patience:
                     break
-
 
         if save_path is not None:
             print("\t Saving model...")
@@ -97,19 +96,20 @@ class BCEOptimizer(Optimizer):
         return er_vocab
 
     def extract_batch(self, er_vocab, er_vocab_pairs, batch_start, batch_size):
-        batch = er_vocab_pairs[
-            batch_start : min(batch_start + batch_size, len(er_vocab_pairs))
-        ]
+        batch_end = min(batch_start + batch_size, len(er_vocab_pairs))
+        batch = er_vocab_pairs[batch_start:batch_end]
 
-        targets = np.zeros((len(batch), self.dataset.num_entities))
-        for idx, pair in enumerate(batch):
-            targets[idx, er_vocab[pair]] = 1.0
+        targets = torch.zeros((len(batch), self.dataset.num_entities), device="cuda")
+        idxs = [(i, er_vocab[pair]) for i, pair in enumerate(batch)]
+        idxs = [(i, e) for i, j in idxs for e in j]
+        rows, cols = zip(*idxs)
+        targets[rows, cols] = 1.0
+
         if self.label_smoothing:
-            targets = ((1.0 - self.label_smoothing) * targets) + (
-                1.0 / targets.shape[1]
-            )
+            targets = (1.0 - self.label_smoothing) * targets
+            targets += 1.0 / targets.shape[1]
 
-        return torch.tensor(np.array(batch)).cuda(), torch.FloatTensor(targets).cuda()
+        return torch.tensor(batch, device="cuda"), targets
 
     def epoch(self, er_vocab, er_vocab_pairs, batch_size: int):
         np.random.shuffle(er_vocab_pairs)
@@ -168,7 +168,7 @@ class KelpieBCEOptimizer(BCEOptimizer):
         self.model.train()
 
         with tqdm(
-            total=len(er_vocab_pairs), unit="ex", disable=not self.verbose
+            total=len(er_vocab_pairs), unit="ex", disable=not self.verbose, leave=False
         ) as bar:
             bar.set_description("train loss")
 
@@ -186,7 +186,7 @@ class KelpieBCEOptimizer(BCEOptimizer):
 
                 batch_start += batch_size
                 bar.update(batch_size)
-                bar.set_postfix(loss=str(round(l.item(), 6)))
+                bar.set_postfix(loss=f"{l.item():.2f}")
 
             if self.decay:
                 self.scheduler.step()

@@ -1,8 +1,11 @@
 import math
+import time
 import numpy as np
 import torch
 
 from collections import OrderedDict
+
+from torch.profiler import profile, record_function, ProfilerActivity
 
 from .engine import RelevanceEngine
 
@@ -99,19 +102,20 @@ class PostTrainingEngine(RelevanceEngine):
         model.eval()
         s, p, o = triple
 
-        all_scores = model.all_scores(np.array([triple])).detach().cpu().numpy()[0]
+        with torch.no_grad():
+            all_scores = model.all_scores(np.array([triple]))[0].detach()
 
-        target_score = all_scores[o]
+        target_score = all_scores[o].item()
         filter_out = model.dataset.to_filter.get((s, p), [])
         if model.is_minimizer():
             all_scores[filter_out] = 1e6
             all_scores[o] = target_score
-            best_score = np.min(all_scores)
-            target_rank = np.sum(all_scores <= target_score)
+            best_score = torch.min(all_scores)
+            target_rank = torch.sum(all_scores <= target_score)
         else:
             all_scores[filter_out] = -1e6
-            best_score = np.max(all_scores)
-            target_rank = np.sum(all_scores >= target_score)
+            best_score = torch.max(all_scores)
+            target_rank = torch.sum(all_scores >= target_score)
             all_scores[o] = target_score
 
         return {
@@ -172,20 +176,18 @@ class SufficientPostTrainingEngine(PostTrainingEngine):
         return relevance
 
     def compute_relevance(self, pred, rule):
+        # start = time.time()
         pred_s, _, _ = pred
         relevances = []
         for entity in self.entities_to_convert:
-            converted_rule = Dataset.replace_entity_in_triples(
-                triples=rule, old_entity=pred_s, new_entity=entity
-            )
+            converted_rule = Dataset.replace_entity_in_triples(rule, pred_s, entity)
             converted_pred = Dataset.replace_entity_in_triple(pred, pred_s, entity)
-
-            individual_relevance = self.compute_individual_relevance(
-                pred=converted_pred, triples=converted_rule
-            )
+            # with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+            individual_relevance = self.compute_individual_relevance(converted_pred, converted_rule)
 
             relevances.append(individual_relevance)
 
+        # print(f"Time: {time.time() - start}")
         return sum(relevances) / len(relevances)
 
     def get_post_train_results(
