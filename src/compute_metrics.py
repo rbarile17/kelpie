@@ -74,9 +74,15 @@ def main(args):
     mrr_delta = round(new_mrr - original_mrr, 3)
     h1_delta = round(new_h1 - original_h1, 3)
 
-    print(f"MRR delta: {mrr_delta}")
-    print(f"H@1 delta: {h1_delta}")
+    explanations_filepath = explanations_path / "output.json"
+    with open(explanations_filepath, "r") as input_file:
+        explanations = json.load(input_file)
+    rels = [x["#relevances"] for x in explanations]
+    rels = sum(rels)
 
+    print(f"rels: {rels}")
+    print(f"H@1 delta: {h1_delta}")
+    print(f"MRR delta: {mrr_delta}")
 
 if __name__ == "__main__":
     main(parse_args())
