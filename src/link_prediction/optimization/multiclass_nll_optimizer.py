@@ -1,3 +1,4 @@
+import optuna
 import torch
 import numpy as np
 
@@ -54,28 +55,43 @@ class MultiClassNLLOptimizer(Optimizer):
         return MultiClassNLLOptimizerHyperParams
 
     def train(
-        self, training_triples, save_path=None, eval_every=-1, valid_triples=None
+        self,
+        training_triples,
+        save_path=None,
+        eval_every=-1,
+        valid_triples=None,
+        trial=None,
+        patience=5,
     ):
         inverse_triples = self.model.dataset.invert_triples(training_triples)
         training_triples = np.vstack((training_triples, inverse_triples))
 
         batch_size = min(self.batch_size, len(training_triples))
 
-        for e in tqdm(range(self.epochs)):
+        best_valid_metric = None
+        epochs_without_improvement = 0
+
+        for e in tqdm(range(1, self.epochs + 1), disable=not self.verbose):
             self.epoch(batch_size, training_triples)
 
             is_eval_epoch = eval_every > 0 and (e + 1) % eval_every == 0
             if valid_triples is not None and is_eval_epoch:
                 metrics = self.evaluator.evaluate(valid_triples, write_output=False)
 
-                print(f"\tValidation Hits@1: {metrics['h1']}")
-                print(f"\tValidation Hits@10: {metrics['h10']}")
-                print(f"\tValidation Mean Reciprocal Rank: {metrics['mrr']}")
-                print(f"\tValidation Mean Rank: {metrics['mr']}")
+                if trial:
+                    trial.report(metrics["h1"], e)
 
-                if save_path is not None:
-                    print("\tSaving model...")
-                    torch.save(self.model.state_dict(), save_path)
+                    if trial.should_prune():
+                        raise optuna.exceptions.TrialPruned()
+
+                if best_valid_metric is None or metrics["h1"] > best_valid_metric:
+                    best_valid_metric = metrics["h1"]
+                    epochs_without_improvement = 0
+                else:
+                    epochs_without_improvement += 1
+
+                if epochs_without_improvement >= patience:
+                    break
 
         if save_path is not None:
             print("\tSaving model...")
