@@ -86,9 +86,31 @@ class ComplEx(Model):
         return (score, reg_matrices)
 
     def all_scores(self, triples):
-        q = self._get_queries(triples)
-        rhs = self._get_rhs()
-        return q @ rhs
+
+        lhs = self.entity_embeddings[triples[:, 0]]
+        rel = self.relation_embeddings[triples[:, 1]]
+
+        lhs = (lhs[:, : self.real_dimension], lhs[:, self.real_dimension :])
+        rel = (rel[:, : self.real_dimension], rel[:, self.real_dimension :])
+
+        real = lhs[0] * rel[0] - lhs[1] * rel[1]
+        im = lhs[0] * rel[1] + lhs[1] * rel[0]
+
+        q = torch.cat([real, im], 1)
+        all_rhs = self.entity_embeddings
+
+        all_rhs_batches = torch.split(all_rhs, 512, dim=0)
+
+        all_scores_batches = []
+
+        for batch in all_rhs_batches:
+            batch = batch.transpose(0, 1)
+            batch_scores = q @ batch
+            all_scores_batches.append(batch_scores)
+
+        out1 = torch.cat(all_scores_batches, dim=1)
+
+        return out1
 
     def _get_rhs(self):
         rhs = self.entity_embeddings.transpose(0, 1)
