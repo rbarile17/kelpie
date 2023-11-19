@@ -17,7 +17,7 @@ class Evaluator:
         self.model.cuda()
 
         batch_size = 256
-        if len(triples) > batch_size and isinstance(self.model, TransE):
+        if len(triples) > batch_size:
             batch_start = 0
             results = []
             num_triples = len(triples)
