@@ -65,6 +65,7 @@ class MultiClassNLLOptimizer(Optimizer):
     ):
         inverse_triples = self.model.dataset.invert_triples(training_triples)
         training_triples = np.vstack((training_triples, inverse_triples))
+        training_triples = torch.from_numpy(training_triples).cuda()
 
         batch_size = min(self.batch_size, len(training_triples))
 
@@ -98,12 +99,11 @@ class MultiClassNLLOptimizer(Optimizer):
             torch.save(self.model.state_dict(), save_path)
 
     def epoch(self, batch_size: int, training_triples):
-        training_triples = torch.from_numpy(training_triples).cuda()
         perm = torch.randperm(training_triples.shape[0])
-        training_triples = training_triples[perm, :]
+        perm_triples = training_triples[perm, :]
         loss = nn.CrossEntropyLoss(reduction="mean")
 
-        num_triples = training_triples.shape[0]
+        num_triples = perm_triples.shape[0]
         with tqdm(
             total=num_triples, unit="ex", disable=not self.verbose, leave=False
         ) as p:
@@ -112,7 +112,7 @@ class MultiClassNLLOptimizer(Optimizer):
             batch_start = 0
             while batch_start < num_triples:
                 batch_end = min(batch_start + batch_size, num_triples)
-                batch = training_triples[batch_start:batch_end].cuda()
+                batch = perm_triples[batch_start:batch_end]
                 l = self.step_on_batch(loss, batch)
 
                 batch_start += self.batch_size
@@ -145,17 +145,16 @@ class KelpieMultiClassNLLOptimizer(MultiClassNLLOptimizer):
         super().__init__(model=model, hp=hp, verbose=verbose)
 
     def epoch(self, batch_size: int, triples: np.array):
-        triples = torch.from_numpy(triples).cuda()
-        triples = triples[torch.randperm(triples.shape[0]), :]
+        perm_triples = triples[torch.randperm(triples.shape[0]), :]
         loss = nn.CrossEntropyLoss(reduction="mean")
 
-        num_triples = triples.shape[0]
+        num_triples = perm_triples.shape[0]
         with tqdm(total=num_triples, unit="ex", disable=not self.verbose) as p:
             p.set_description("Train loss")
 
             batch_start = 0
             while batch_start < triples.shape[0]:
-                batch = triples[batch_start : batch_start + batch_size].cuda()
+                batch = perm_triples[batch_start : batch_start + batch_size]
                 l = self.step_on_batch(loss, batch)
 
                 self.model.update_embeddings()
