@@ -75,7 +75,11 @@ def main(
             entities = [dataset.entity_to_id[entity] for entity in entities]
             triple_to_convert_set[pred] = entities
 
-            best_rule, _ = explanation["rule_to_relevance"][0]
+            tmp = explanation["rule_to_relevance"][0]
+            if len(tmp) == 3:
+                _, best_rule, _ = tmp
+            else:
+                best_rule, _ = tmp
             best_rule = [dataset.ids_triple(triple) for triple in best_rule]
 
             triple_to_best_rule[pred] = best_rule
@@ -134,7 +138,7 @@ def main(
         new_model = model_class(dataset=new_dataset, hp=model_hp, init_random=True)
         hp = model_config["training"]
         optimizer_params = optimizer_class.get_hyperparams_class()(**hp)
-        optimizer = optimizer_class(model=model, hp=optimizer_params)
+        optimizer = optimizer_class(model=new_model, hp=optimizer_params)
 
         optimizer.train(training_triples=new_dataset.training_triples)
         new_model.eval()
@@ -197,7 +201,11 @@ def main(
         for explanation in explanations:
             pred = dataset.ids_triple(explanation["triple"])
             preds.append(pred)
-            _, best_rule, _ = explanation["rule_to_relevance"][0]
+            tmp = explanation["rule_to_relevance"][0]
+            if len(tmp) == 3:
+                _, best_rule, _ = tmp
+            else:
+                best_rule, _ = tmp
             best_rule = [dataset.ids_triple(triple) for triple in best_rule]
 
             triple_to_best_rule[pred] = best_rule
