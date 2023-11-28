@@ -7,6 +7,9 @@ from tqdm import tqdm
 
 from ...data import Dataset
 
+from ... import DB100K_PATH
+
+
 sparql = SPARQLWrapper(endpoint="https://query.wikidata.org/sparql")
 sparql.setReturnFormat(JSON)
 
@@ -64,4 +67,4 @@ while batch_start < num_entities:
 results = pd.DataFrame(results)
 results = results.groupby(by=results["entity"]).agg(to_set)
 results = results.reset_index()
-results.to_csv('mapping.csv', index=False, header=True)
+results.to_csv(DB100K_PATH / 'mapping.csv', index=False, header=True)

@@ -4,10 +4,10 @@ import pandas as pd
 
 from ast import literal_eval
 
-from . import DBPEDIA50_PATH, DBPEDIA50_REASONED_PATH
+from . import DB100K_PATH, DB100K_REASONED_PATH
 
 entities = pd.read_csv(
-    DBPEDIA50_PATH / "entities.csv",
+    DB100K_PATH / "entities.csv",
     converters={"classes": literal_eval}
 )
 
@@ -37,7 +37,7 @@ with open("query.sparql", "w") as f:
     f.write(query)
 
 robot_command = f"""
-sudo robot query --input {str(DBPEDIA50_REASONED_PATH / "DBpedia50_reasoned.owl")} --query query.sparql results.csv
+sudo robot query --input {str(DB100K_REASONED_PATH / "DBpedia50_reasoned.owl")} --query query.sparql results.csv
 """
 
 os.system(robot_command)
@@ -51,7 +51,7 @@ results["entity"] = results["entity"].map(
     lambda entity: entity.split("http://dbpedia.org/resource/")[-1]
 )
 
-results.to_csv(DBPEDIA50_REASONED_PATH / "entities.csv", index=False)
+results.to_csv(DB100K_REASONED_PATH / "entities.csv", index=False)
 
 os.remove("query.sparql")
 os.remove("results.csv")
