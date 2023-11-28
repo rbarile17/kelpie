@@ -99,7 +99,7 @@ def build_pipeline(model, dataset, hp, mode, baseline, prefilter, xsi, summariza
 @click.option(
     "--preds",
     type=click.Path(exists=True),
-    help="Path of the the predictions to explain.",
+    help="Path of the predictions to explain.",
 )
 @click.option(
     "--coverage",
