@@ -31,13 +31,16 @@ Furthermore, this version of Kelpie requires the following libraries:
 - BisPy 0.2.2
 - Pydantic 2.4.2
 
-After cloning this repository (`git clone https://github.com/rbarile17/kelpie.git`) all the dependencies can be installed by running `environment.sh`.
+After cloning this repository (`git clone https://github.com/rbarile17/kelpie.git`) all the dependencies can be installed by running 
+```bash
+pip install -r requirements.txt
+```
 
 ## Resources
 We make the following resources available:
 
 * the datasets in the `kelpie/data` folder
-* the downloadable [trained models]() to place in a new folder `kelpie/models`
+* the downloadable [trained models](https://figshare.com/s/83a1022644a5183244d8) to place in a new folder `kelpie/models`
 * the output files obtained by running the experiments reported in our paper
 
 ## Usage
