@@ -18,7 +18,7 @@ python -m src.semantic.DB100K.replace_mapped_entities
 ```
 obtaining the files `data/DB100K/mapped/train.txt`, `data/DB100K/mapped/valid.txt`, `data/DB100K/test.txt` which contains RDF triples on entities with the ID in DBpedia.
 
-NExt we integrated the triples with the semantic information. We executed the command:
+Next we integrated the triples with the semantic information. We executed the command:
 ```python
 python -m src.semantic.retrieve_classes
 ```
