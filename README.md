@@ -46,7 +46,7 @@ We make the following resources available:
 ## Usage
 ### Model Traning and Testing
 Alternatively to download our trained models, it is possible to train the models from scratch.
-We report the template of the command to execute the script `src/ink_prediction/explain.py`
+We report the template of the command to execute the script `src/link_prediction/explain.py`
 ```python
 python -m src.link_prediction.train --dataset <dataset> --model_config <config> --valid <validation_epochs>
 ```
@@ -55,8 +55,8 @@ python -m src.link_prediction.train --dataset <dataset> --model_config <config> 
 We report how to extract explanations for a trained model, and how to verify their effectiveness. 
 
 Each experiment is composed of two separate steps:
-* an **explanation extraction** step, where we identify the explanations for a set of predictions by running `src/explain.py`
-* an **explanation verification** step, where the we alter the training set and retrain the model to verify that the extracted explanations are indeed effective by running `src/verify_explanations.py`.
+* **explanation extraction**: `src/explain.py`
+* **explanation verification**: `src/verify_explanations.py`.
 
 We report for each script a basic template of the command to execute it:
 ```python
