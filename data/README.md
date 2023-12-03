@@ -2,9 +2,9 @@
 
 # Datasets
 
-We perform the experiments on three datasets: DBpedia50k, DB100K and YAGO4-20. DB50K and DB100K are both samples of the DBpedia KG. We sampled YAGO4-20 from the YAGO4 KG. We extracted triples that mention entities involved in at least 20 triples. Next, we removed triples with literal objects.
+We performed the experiments in the paper on three datasets: DBpedia50 (DB50K), DB100K and YAGO4-20. DB50K and DB100K are both samples of the DBpedia KG. We sampled YAGO4-20 from the YAGO4 KG. We extracted triples that mention entities involved in at least 20 triples. Next, we removed triples with literal objects.
 
-For each dataset we provide three files containing the RDF triples
+For each dataset we provide three files containing the RDF triples: `train.txt`, `valid.txt`, `test.txt`.
 
 The common aspect of these datasets is that along with the RDF triples they include or can be integrated with OWL (specifically OWL 2 DL) statements including the classes of the entities, as well as other schema axioms concerning classes and relationships. Such datasets can be regarded as ontologies with assertional (RDF) and terminological (OWL) knowledge. We require this feature as our approach heavily relies on a function _Cl_ returning the conjunction of the classes an entity belongs to. Moreover, the OWL schema axioms enable us to utilize the HermiT reasoner to enrich the output of _Cl_ with classes to which entities implicitly belong. We run the reasoner offline materializing all the implicit information. Hence, we execute our method without any other adjustment.
 
@@ -39,7 +39,7 @@ python -m src.semantic.reasoned_onto_get_classes
 ```
 to obtain the file `data/DB100K/reasoned/entities.csv` which contains for each entity the classes to which it belongs, including the implicit ones. Our extensions of Kelpie rely on this file.
 
-The process in analogous for DBpedia50.
+The process is analogous for DBpedia50.
 
 For YAGO4-20 the process is different. 
 Firstly, we downloaded YAGO4 [here](https://yago-knowledge.org/data/yago4/en/2020-02-24/).
