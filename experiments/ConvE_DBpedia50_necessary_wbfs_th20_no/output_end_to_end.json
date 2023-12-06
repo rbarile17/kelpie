@@ -1,0 +1,1832 @@
+[
+    {
+        "triple_to_explain": [
+            "The_1982_Annual_World's_Best_SF",
+            "language",
+            "English_language"
+        ],
+        "rule": [
+            [
+                "The_1982_Annual_World's_Best_SF",
+                "publisher",
+                "DAW_Books"
+            ],
+            [
+                "The_1982_Annual_World's_Best_SF",
+                "coverArtist",
+                "Wayne_Barlowe"
+            ]
+        ],
+        "score": "0.3899005651473999",
+        "rank": "1",
+        "new_score": "0.9998351335525513",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Magandang_Umaga,_Pilipinas",
+            "format",
+            "480i"
+        ],
+        "rule": [
+            [
+                "Magandang_Umaga,_Pilipinas",
+                "network",
+                "ABS-CBN"
+            ]
+        ],
+        "score": "0.5773674845695496",
+        "rank": "1",
+        "new_score": "0.005560711957514286",
+        "new_rank": "2"
+    },
+    {
+        "triple_to_explain": [
+            "My_Apocalypse",
+            "subsequentWork",
+            "Cyanide_(song)"
+        ],
+        "rule": [
+            [
+                "Cyanide_(song)",
+                "previousWork",
+                "My_Apocalypse"
+            ]
+        ],
+        "score": "0.6790869832038879",
+        "rank": "1",
+        "new_score": "9.752601727086585e-06",
+        "new_rank": "6316"
+    },
+    {
+        "triple_to_explain": [
+            "The_Unifying_Force",
+            "subsequentWork",
+            "The_Joiner_King"
+        ],
+        "rule": [
+            [
+                "The_Unifying_Force",
+                "nonFictionSubject",
+                "Star_Wars"
+            ]
+        ],
+        "score": "0.7292563915252686",
+        "rank": "1",
+        "new_score": "0.3337288498878479",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Herman_Rarebell",
+            "hometown",
+            "Germany"
+        ],
+        "rule": [
+            [
+                "Herman_Rarebell",
+                "instrument",
+                "Drum_kit"
+            ]
+        ],
+        "score": "0.025900956243276596",
+        "rank": "1",
+        "new_score": "0.00046637371997348964",
+        "new_rank": "13"
+    },
+    {
+        "triple_to_explain": [
+            "Jamey_Haddad",
+            "instrument",
+            "Drum_kit"
+        ],
+        "rule": [
+            [
+                "Jamey_Haddad",
+                "genre",
+                "Jazz"
+            ]
+        ],
+        "score": "0.011873635463416576",
+        "rank": "1",
+        "new_score": "0.0008579513523727655",
+        "new_rank": "2"
+    },
+    {
+        "triple_to_explain": [
+            "Sweet_Dreams_My_LA_Ex",
+            "writer",
+            "Bloodshy_&_Avant"
+        ],
+        "rule": [
+            [
+                "Sweet_Dreams_My_LA_Ex",
+                "producer",
+                "Bloodshy_&_Avant"
+            ]
+        ],
+        "score": "0.7855854034423828",
+        "rank": "1",
+        "new_score": "0.0003695943742059171",
+        "new_rank": "15"
+    },
+    {
+        "triple_to_explain": [
+            "Somebody_Paints_the_Wall",
+            "musicalBand",
+            "Tracy_Lawrence"
+        ],
+        "rule": [
+            [
+                "Somebody_Paints_the_Wall",
+                "musicalBand",
+                "Josh_Logan_(country_singer)"
+            ]
+        ],
+        "score": "0.5639321208000183",
+        "rank": "1",
+        "new_score": "0.6988282203674316",
+        "new_rank": "2"
+    },
+    {
+        "triple_to_explain": [
+            "Calopogon",
+            "division",
+            "Flowering_plant"
+        ],
+        "rule": [
+            [
+                "Calopogon",
+                "family",
+                "Orchidaceae"
+            ]
+        ],
+        "score": "0.7476416230201721",
+        "rank": "1",
+        "new_score": "0.5068884491920471",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "The_Lucy_Show",
+            "language",
+            "English_language"
+        ],
+        "rule": [
+            [
+                "The_Lucy_Show",
+                "creator",
+                "Madelyn_Pugh"
+            ]
+        ],
+        "score": "0.34951484203338623",
+        "rank": "1",
+        "new_score": "0.6526961922645569",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Buddy_Holly_(song)",
+            "musicalBand",
+            "Weezer"
+        ],
+        "rule": [
+            [
+                "Buddy_Holly_(song)",
+                "album",
+                "Weezer_(1994_album)"
+            ]
+        ],
+        "score": "0.7045146226882935",
+        "rank": "1",
+        "new_score": "0.984386146068573",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Austrobaileyales",
+            "kingdom",
+            "Plant"
+        ],
+        "rule": [
+            [
+                "Austrobaileyales",
+                "division",
+                "Flowering_plant"
+            ]
+        ],
+        "score": "0.5413023233413696",
+        "rank": "1",
+        "new_score": "0.1299365758895874",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Mercedes-Benz_C-Class_(W204)",
+            "layout",
+            "Automobile_layout"
+        ],
+        "rule": [
+            [
+                "Mercedes-Benz_C-Class_(W204)",
+                "assembly",
+                "South_Africa"
+            ]
+        ],
+        "score": "0.25455957651138306",
+        "rank": "1",
+        "new_score": "0.3928402364253998",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Trichosalpinx_ciliaris",
+            "kingdom",
+            "Plant"
+        ],
+        "rule": [
+            [
+                "Trichosalpinx_ciliaris",
+                "division",
+                "Flowering_plant"
+            ],
+            [
+                "Trichosalpinx_ciliaris",
+                "family",
+                "Epidendroideae"
+            ]
+        ],
+        "score": "0.4832678735256195",
+        "rank": "1",
+        "new_score": "0.18561094999313354",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Johnny_Pate",
+            "genre",
+            "Jazz"
+        ],
+        "rule": [
+            [
+                "Johnny_Pate",
+                "associatedBand",
+                "Jazz"
+            ]
+        ],
+        "score": "0.9983419179916382",
+        "rank": "1",
+        "new_score": "0.987677276134491",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Barry_Melton",
+            "associatedMusicalArtist",
+            "The_Dinosaurs"
+        ],
+        "rule": [
+            [
+                "Barry_Melton",
+                "associatedBand",
+                "The_Dinosaurs"
+            ]
+        ],
+        "score": "0.7659114599227905",
+        "rank": "1",
+        "new_score": "2.1338724764063954e-05",
+        "new_rank": "637"
+    },
+    {
+        "triple_to_explain": [
+            "Ant_nest_beetle",
+            "class",
+            "Insect"
+        ],
+        "rule": [
+            [
+                "Ant_nest_beetle",
+                "order",
+                "Adephaga"
+            ]
+        ],
+        "score": "0.2669205665588379",
+        "rank": "1",
+        "new_score": "0.03659217804670334",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Bekka_Bramlett",
+            "associatedMusicalArtist",
+            "Fleetwood_Mac"
+        ],
+        "rule": [
+            [
+                "Bekka_Bramlett",
+                "associatedBand",
+                "Fleetwood_Mac"
+            ],
+            [
+                "Fleetwood_Mac",
+                "formerBandMember",
+                "Bekka_Bramlett"
+            ]
+        ],
+        "score": "0.9652520418167114",
+        "rank": "1",
+        "new_score": "1.3220578694017604e-05",
+        "new_rank": "1610"
+    },
+    {
+        "triple_to_explain": [
+            "The_Best_of_Bob_Dylan_(1997_album)",
+            "genre",
+            "Folk_music"
+        ],
+        "rule": [
+            [
+                "The_Best_of_Bob_Dylan_(1997_album)",
+                "producer",
+                "John_Hammond_(producer)"
+            ]
+        ],
+        "score": "0.417089581489563",
+        "rank": "1",
+        "new_score": "0.003182176500558853",
+        "new_rank": "5"
+    },
+    {
+        "triple_to_explain": [
+            "Percy_Chen",
+            "birthPlace",
+            "Port_of_Spain"
+        ],
+        "rule": [
+            [
+                "Percy_Chen",
+                "almaMater",
+                "University_College_London"
+            ]
+        ],
+        "score": "0.8804371356964111",
+        "rank": "1",
+        "new_score": "0.7667652368545532",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Desmobathrinae",
+            "order",
+            "Lepidoptera"
+        ],
+        "rule": [
+            [
+                "Desmobathrinae",
+                "class",
+                "Insect"
+            ]
+        ],
+        "score": "0.050655487924814224",
+        "rank": "1",
+        "new_score": "0.003442581743001938",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Idaho_County,_Idaho",
+            "largestCity",
+            "Grangeville,_Idaho"
+        ],
+        "rule": [
+            [
+                "Little_Salmon_River",
+                "region",
+                "Idaho_County,_Idaho"
+            ]
+        ],
+        "score": "0.351206511259079",
+        "rank": "1",
+        "new_score": "0.586948573589325",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Daniel_(Bat_for_Lashes_song)",
+            "recordedIn",
+            "London"
+        ],
+        "rule": [
+            [
+                "Daniel_(Bat_for_Lashes_song)",
+                "genre",
+                "Synthpop"
+            ]
+        ],
+        "score": "0.2460012137889862",
+        "rank": "1",
+        "new_score": "0.010632914490997791",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "FBI_Girl",
+            "director",
+            "William_Berke"
+        ],
+        "rule": [
+            [
+                "FBI_Girl",
+                "producer",
+                "William_Berke"
+            ]
+        ],
+        "score": "0.7620753049850464",
+        "rank": "1",
+        "new_score": "4.20106589444913e-05",
+        "new_rank": "224"
+    },
+    {
+        "triple_to_explain": [
+            "Tom_Kurvers",
+            "formerTeam",
+            "Montreal_Canadiens"
+        ],
+        "rule": [
+            [
+                "Tom_Kurvers",
+                "draftTeam",
+                "Montreal_Canadiens"
+            ]
+        ],
+        "score": "0.8972991108894348",
+        "rank": "1",
+        "new_score": "0.00984668917953968",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Live_at_the_Marquee_(Dream_Theater_album)",
+            "recordedIn",
+            "London"
+        ],
+        "rule": [
+            [
+                "Live_at_the_Marquee_(Dream_Theater_album)",
+                "genre",
+                "Progressive_metal"
+            ]
+        ],
+        "score": "0.011528540402650833",
+        "rank": "1",
+        "new_score": "0.012777412310242653",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Photo_(song)",
+            "musicalBand",
+            "Ryan_Cabrera"
+        ],
+        "rule": [
+            [
+                "Photo_(song)",
+                "musicalArtist",
+                "Ryan_Cabrera"
+            ]
+        ],
+        "score": "0.6493148803710938",
+        "rank": "1",
+        "new_score": "1.0252311767544597e-05",
+        "new_rank": "8361"
+    },
+    {
+        "triple_to_explain": [
+            "Little_Nicky",
+            "writer",
+            "Steven_Brill_(scriptwriter)"
+        ],
+        "rule": [
+            [
+                "Little_Nicky",
+                "director",
+                "Steven_Brill_(scriptwriter)"
+            ]
+        ],
+        "score": "0.30265381932258606",
+        "rank": "1",
+        "new_score": "9.81008997769095e-06",
+        "new_rank": "7929"
+    },
+    {
+        "triple_to_explain": [
+            "Samuel_Rothschild",
+            "deathPlace",
+            "Greater_Sudbury"
+        ],
+        "rule": [
+            [
+                "Samuel_Rothschild",
+                "birthPlace",
+                "Greater_Sudbury"
+            ]
+        ],
+        "score": "0.2938166558742523",
+        "rank": "1",
+        "new_score": "2.8509348339866847e-05",
+        "new_rank": "1079"
+    },
+    {
+        "triple_to_explain": [
+            "Glam_(album)",
+            "artist",
+            "Mouse_on_Mars"
+        ],
+        "rule": [
+            [
+                "Glam_(album)",
+                "producer",
+                "Mouse_on_Mars"
+            ]
+        ],
+        "score": "0.7535077929496765",
+        "rank": "1",
+        "new_score": "1.2578148016473278e-05",
+        "new_rank": "2544"
+    },
+    {
+        "triple_to_explain": [
+            "Honky_Cat",
+            "writer",
+            "Elton_John"
+        ],
+        "rule": [
+            [
+                "Honky_Cat",
+                "musicalBand",
+                "Elton_John"
+            ]
+        ],
+        "score": "0.6094648838043213",
+        "rank": "1",
+        "new_score": "0.7452929615974426",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Iris_korolkowii",
+            "kingdom",
+            "Plant"
+        ],
+        "rule": [
+            [
+                "Iris_korolkowii",
+                "division",
+                "Flowering_plant"
+            ]
+        ],
+        "score": "0.2327679544687271",
+        "rank": "1",
+        "new_score": "0.12100004404783249",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Leonid_Mikhailovich_Kharitonov",
+            "hometown",
+            "Soviet_Union"
+        ],
+        "rule": [
+            [
+                "Leonid_Mikhailovich_Kharitonov",
+                "genre",
+                "Folk_music"
+            ]
+        ],
+        "score": "0.38562390208244324",
+        "rank": "1",
+        "new_score": "0.06720305234193802",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Keri_Kelli",
+            "associatedBand",
+            "Warrant_(American_band)"
+        ],
+        "rule": [
+            [
+                "Keri_Kelli",
+                "genre",
+                "Heavy_metal_music"
+            ]
+        ],
+        "score": "0.9289208650588989",
+        "rank": "1",
+        "new_score": "0.6844442486763",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Betty_Ford",
+            "child",
+            "John_Gardner_Ford"
+        ],
+        "rule": [
+            [
+                "John_Gardner_Ford",
+                "parent",
+                "Betty_Ford"
+            ]
+        ],
+        "score": "0.5563686490058899",
+        "rank": "1",
+        "new_score": "1.2634461199922953e-05",
+        "new_rank": "9314"
+    },
+    {
+        "triple_to_explain": [
+            "The_Bamboos_(funk_band)",
+            "associatedBand",
+            "Kylie_Auldist"
+        ],
+        "rule": [
+            [
+                "Tim_Rogers_(musician)",
+                "associatedBand",
+                "The_Bamboos_(funk_band)"
+            ]
+        ],
+        "score": "0.6346703171730042",
+        "rank": "1",
+        "new_score": "0.6416924595832825",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Helmut_Haugk",
+            "deathPlace",
+            "Germany"
+        ],
+        "rule": [
+            [
+                "Helmut_Haugk",
+                "battle",
+                "North_African_Campaign"
+            ]
+        ],
+        "score": "0.6319640874862671",
+        "rank": "1",
+        "new_score": "0.6174266338348389",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Etta_James",
+            "recordLabel",
+            "RCA_Records"
+        ],
+        "rule": [
+            [
+                "Etta_James",
+                "recordLabel",
+                "RCA_Records"
+            ]
+        ],
+        "score": "0.9222579002380371",
+        "rank": "1",
+        "new_score": "0.014864480122923851",
+        "new_rank": "3"
+    },
+    {
+        "triple_to_explain": [
+            "WTQR",
+            "sisterStation",
+            "WPTI"
+        ],
+        "rule": [
+            [
+                "WPTI",
+                "sisterStation",
+                "WTQR"
+            ]
+        ],
+        "score": "0.6000207662582397",
+        "rank": "1",
+        "new_score": "1.3855225006409455e-05",
+        "new_rank": "7226"
+    },
+    {
+        "triple_to_explain": [
+            "Weezer",
+            "associatedBand",
+            "Weezer"
+        ],
+        "rule": [
+            [
+                "Weezer",
+                "associatedMusicalArtist",
+                "Weezer"
+            ]
+        ],
+        "score": "0.7276366949081421",
+        "rank": "1",
+        "new_score": "4.514780300723942e-07",
+        "new_rank": "23427"
+    },
+    {
+        "triple_to_explain": [
+            "Cowboys_International",
+            "associatedBand",
+            "Siouxsie_and_the_Banshees"
+        ],
+        "rule": [
+            [
+                "Cowboys_International",
+                "associatedMusicalArtist",
+                "Siouxsie_and_the_Banshees"
+            ]
+        ],
+        "score": "0.8501222133636475",
+        "rank": "1",
+        "new_score": "1.6069494677140028e-06",
+        "new_rank": "23772"
+    },
+    {
+        "triple_to_explain": [
+            "The_House_of_Love_(1990_album)",
+            "producer",
+            "The_House_of_Love"
+        ],
+        "rule": [
+            [
+                "The_House_of_Love_(1990_album)",
+                "producer",
+                "Stephen_Hague"
+            ]
+        ],
+        "score": "0.06323134899139404",
+        "rank": "1",
+        "new_score": "0.16440622508525848",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "William_Waters_Boyce",
+            "birthPlace",
+            "South_Carolina"
+        ],
+        "rule": [
+            [
+                "William_Waters_Boyce",
+                "region",
+                "South_Carolina"
+            ]
+        ],
+        "score": "0.5853878855705261",
+        "rank": "1",
+        "new_score": "5.239792153588496e-05",
+        "new_rank": "476"
+    },
+    {
+        "triple_to_explain": [
+            "Bart_Cummings",
+            "raceHorse",
+            "Light_Fingers"
+        ],
+        "rule": [
+            [
+                "Light_Fingers",
+                "trainer",
+                "Bart_Cummings"
+            ]
+        ],
+        "score": "0.07922352105379105",
+        "rank": "1",
+        "new_score": "1.31960041471757e-05",
+        "new_rank": "23630"
+    },
+    {
+        "triple_to_explain": [
+            "Call_Me_(Blondie_song)",
+            "producer",
+            "Giorgio_Moroder"
+        ],
+        "rule": [
+            [
+                "Call_Me_(Blondie_song)",
+                "writer",
+                "Giorgio_Moroder"
+            ]
+        ],
+        "score": "0.862248957157135",
+        "rank": "1",
+        "new_score": "0.00012189392145955935",
+        "new_rank": "397"
+    },
+    {
+        "triple_to_explain": [
+            "Bunurong",
+            "language",
+            "English_language"
+        ],
+        "rule": [
+            [
+                "Wathaurong",
+                "related",
+                "Bunurong"
+            ]
+        ],
+        "score": "0.009402893483638763",
+        "rank": "1",
+        "new_score": "0.9974627494812012",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "The_Om_Years",
+            "subsequentWork",
+            "FUN_DMC"
+        ],
+        "rule": [
+            [
+                "FUN_DMC",
+                "previousWork",
+                "The_Om_Years"
+            ]
+        ],
+        "score": "0.8296263813972473",
+        "rank": "1",
+        "new_score": "1.1007785360561684e-05",
+        "new_rank": "6416"
+    },
+    {
+        "triple_to_explain": [
+            "Paris_Nights/New_York_Mornings",
+            "subsequentWork",
+            "Closer_(Corinne_Bailey_Rae_song)"
+        ],
+        "rule": [
+            [
+                "Paris_Nights/New_York_Mornings",
+                "musicalArtist",
+                "Corinne_Bailey_Rae"
+            ]
+        ],
+        "score": "0.8045077323913574",
+        "rank": "1",
+        "new_score": "0.29047030210494995",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "The_Summer_Collection:_Greatest_Hits",
+            "subsequentWork",
+            "The_Dance_Collection:_A_Compilation_of_Twelve_Inch_Singles"
+        ],
+        "rule": [
+            [
+                "The_Summer_Collection:_Greatest_Hits",
+                "genre",
+                "Dance_music"
+            ]
+        ],
+        "score": "0.7139129042625427",
+        "rank": "1",
+        "new_score": "0.513272762298584",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Independiente_del_Valle",
+            "league",
+            "Ecuadorian_Serie_A"
+        ],
+        "rule": [
+            [
+                "Leandro_Guaita",
+                "team",
+                "Independiente_del_Valle"
+            ]
+        ],
+        "score": "0.5754033327102661",
+        "rank": "1",
+        "new_score": "0.35180214047431946",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Stupid_Love_(song)",
+            "musicalBand",
+            "Jason_Derulo"
+        ],
+        "rule": [
+            [
+                "Stupid_Love_(song)",
+                "writer",
+                "Jason_Derulo"
+            ]
+        ],
+        "score": "0.8502547144889832",
+        "rank": "1",
+        "new_score": "0.8662590384483337",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Yung_Wun",
+            "associatedBand",
+            "DMX_(rapper)"
+        ],
+        "rule": [
+            [
+                "Yung_Wun",
+                "recordLabel",
+                "Ruff_Ryders_Entertainment"
+            ]
+        ],
+        "score": "0.1617308408021927",
+        "rank": "1",
+        "new_score": "0.0148524334654212",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Cuban_Fireball",
+            "language",
+            "English_language"
+        ],
+        "rule": [
+            [
+                "Cuban_Fireball",
+                "writer",
+                "Jack_Townley"
+            ]
+        ],
+        "score": "0.25243574380874634",
+        "rank": "1",
+        "new_score": "0.9977110624313354",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Bizzy_Bone",
+            "genre",
+            "Hip_hop_music"
+        ],
+        "rule": [
+            [
+                "Playalitical",
+                "associatedMusicalArtist",
+                "Bizzy_Bone"
+            ]
+        ],
+        "score": "0.1539563536643982",
+        "rank": "1",
+        "new_score": "0.9554732441902161",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Crow_(Australian_band)",
+            "associatedMusicalArtist",
+            "Crow_(Australian_band)"
+        ],
+        "rule": [
+            [
+                "Crow_(Australian_band)",
+                "associatedBand",
+                "Crow_(Australian_band)"
+            ]
+        ],
+        "score": "0.8097845315933228",
+        "rank": "1",
+        "new_score": "0.3072124421596527",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Vehicle_(The_Clean_album)",
+            "subsequentWork",
+            "Modern_Rock_(album)"
+        ],
+        "rule": [
+            [
+                "Vehicle_(The_Clean_album)",
+                "recordedIn",
+                "London"
+            ]
+        ],
+        "score": "0.6822825074195862",
+        "rank": "1",
+        "new_score": "0.6106402277946472",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Demetrida",
+            "class",
+            "Insect"
+        ],
+        "rule": [
+            [
+                "Demetrida",
+                "order",
+                "Adephaga"
+            ]
+        ],
+        "score": "0.2512887716293335",
+        "rank": "1",
+        "new_score": "0.04168701171875",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Frauenfeld",
+            "neighboringMunicipality",
+            "Aadorf"
+        ],
+        "rule": [
+            [
+                "Aadorf",
+                "neighboringMunicipality",
+                "Frauenfeld"
+            ]
+        ],
+        "score": "0.8013397455215454",
+        "rank": "1",
+        "new_score": "5.342083386494778e-05",
+        "new_rank": "48"
+    },
+    {
+        "triple_to_explain": [
+            "Austin_Van_Catterton,_Sr.",
+            "deathPlace",
+            "Melbourne,_Florida"
+        ],
+        "rule": [
+            [
+                "Austin_Van_Catterton,_Sr.",
+                "residence",
+                "Melbourne,_Florida"
+            ]
+        ],
+        "score": "0.2782866656780243",
+        "rank": "1",
+        "new_score": "8.72900454851333e-06",
+        "new_rank": "9984"
+    },
+    {
+        "triple_to_explain": [
+            "Stay_the_Night_(James_Blunt_song)",
+            "producer",
+            "Steve_Robson"
+        ],
+        "rule": [
+            [
+                "Stay_the_Night_(James_Blunt_song)",
+                "subsequentWork",
+                "So_Far_Gone_(song)"
+            ]
+        ],
+        "score": "0.7976110577583313",
+        "rank": "1",
+        "new_score": "0.9274224042892456",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Tillman_Thomas",
+            "successor",
+            "Keith_Mitchell"
+        ],
+        "rule": [
+            [
+                "Keith_Mitchell",
+                "primeMinister",
+                "Tillman_Thomas"
+            ]
+        ],
+        "score": "0.8870126605033875",
+        "rank": "1",
+        "new_score": "0.6101930141448975",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "2014\u201315_Northampton_Town_F.C._season",
+            "homeStadium",
+            "Sixfields_Stadium"
+        ],
+        "rule": [
+            [
+                "2014\u201315_Northampton_Town_F.C._season",
+                "ground",
+                "Sixfields_Stadium"
+            ]
+        ],
+        "score": "0.5961182117462158",
+        "rank": "1",
+        "new_score": "1.4438918697123881e-05",
+        "new_rank": "6627"
+    },
+    {
+        "triple_to_explain": [
+            "Can't_Help_Thinking_About_Me",
+            "subsequentWork",
+            "Do_Anything_You_Say"
+        ],
+        "rule": [
+            [
+                "Do_Anything_You_Say",
+                "previousWork",
+                "Can't_Help_Thinking_About_Me"
+            ]
+        ],
+        "score": "0.7464771866798401",
+        "rank": "1",
+        "new_score": "1.1551156603673007e-05",
+        "new_rank": "5927"
+    },
+    {
+        "triple_to_explain": [
+            "Tygers_of_Pan_Tang",
+            "associatedBand",
+            "Blue_Murder_(band)"
+        ],
+        "rule": [
+            [
+                "Tygers_of_Pan_Tang",
+                "associatedMusicalArtist",
+                "Blue_Murder_(band)"
+            ]
+        ],
+        "score": "0.7581730484962463",
+        "rank": "1",
+        "new_score": "0.08991619199514389",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Percy_Saint",
+            "deathPlace",
+            "Louisiana"
+        ],
+        "rule": [
+            [
+                "Percy_Saint",
+                "birthPlace",
+                "Louisiana"
+            ]
+        ],
+        "score": "0.8003197312355042",
+        "rank": "1",
+        "new_score": "0.0003368329780641943",
+        "new_rank": "20"
+    },
+    {
+        "triple_to_explain": [
+            "Do_Ya_Do_Ya_(Wanna_Please_Me)",
+            "musicalArtist",
+            "Samantha_Fox"
+        ],
+        "rule": [
+            [
+                "Do_Ya_Do_Ya_(Wanna_Please_Me)",
+                "recordedIn",
+                "London"
+            ]
+        ],
+        "score": "0.6719253659248352",
+        "rank": "1",
+        "new_score": "0.7127520442008972",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Kandeh_Yumkella",
+            "residence",
+            "Sierra_Leone"
+        ],
+        "rule": [
+            [
+                "Kandeh_Yumkella",
+                "almaMater",
+                "University_of_Illinois_at_Urbana\u2013Champaign"
+            ]
+        ],
+        "score": "0.45033779740333557",
+        "rank": "1",
+        "new_score": "0.6120190620422363",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Rusty_Day",
+            "associatedBand",
+            "The_Amboy_Dukes"
+        ],
+        "rule": [
+            [
+                "Rusty_Day",
+                "genre",
+                "Heavy_metal_music"
+            ]
+        ],
+        "score": "0.8565648198127747",
+        "rank": "1",
+        "new_score": "0.440190851688385",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "South_Fork_Eel_River",
+            "riverMouth",
+            "Eel_River_(California)"
+        ],
+        "rule": [
+            [
+                "Eel_River_(California)",
+                "leftTributary",
+                "South_Fork_Eel_River"
+            ]
+        ],
+        "score": "0.03436378389596939",
+        "rank": "1",
+        "new_score": "1.4497228221443947e-05",
+        "new_rank": "8534"
+    },
+    {
+        "triple_to_explain": [
+            "Gerry_Gray",
+            "team",
+            "San_Jose_Earthquakes_(1974\u201388)"
+        ],
+        "rule": [
+            [
+                "Gerry_Gray",
+                "team",
+                "Canada_men's_national_soccer_team"
+            ]
+        ],
+        "score": "0.0019824167247861624",
+        "rank": "1",
+        "new_score": "3.3573283872101456e-05",
+        "new_rank": "813"
+    },
+    {
+        "triple_to_explain": [
+            "I.T.A.L.Y.",
+            "language",
+            "English_language"
+        ],
+        "rule": [
+            [
+                "I.T.A.L.Y.",
+                "language",
+                "Filipino_language"
+            ]
+        ],
+        "score": "0.0102511802688241",
+        "rank": "1",
+        "new_score": "0.997572124004364",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Platylesches",
+            "class",
+            "Insect"
+        ],
+        "rule": [
+            [
+                "Platylesches",
+                "order",
+                "Lepidoptera"
+            ]
+        ],
+        "score": "0.2140408754348755",
+        "rank": "1",
+        "new_score": "0.03551375865936279",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Neomordellistena_flavopila",
+            "class",
+            "Insect"
+        ],
+        "rule": [
+            [
+                "Neomordellistena_flavopila",
+                "genus",
+                "Neomordellistena"
+            ]
+        ],
+        "score": "0.1729426234960556",
+        "rank": "1",
+        "new_score": "0.04047461226582527",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Sergei_Kolosov",
+            "position",
+            "Defenceman"
+        ],
+        "rule": [
+            [
+                "Sergei_Kolosov",
+                "birthPlace",
+                "Soviet_Union"
+            ]
+        ],
+        "score": "0.1768600344657898",
+        "rank": "1",
+        "new_score": "0.12279586493968964",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Keshubhai_Patel",
+            "successor",
+            "Narendra_Modi"
+        ],
+        "rule": [
+            [
+                "Keshubhai_Patel",
+                "predecessor",
+                "Chhabildas_Mehta"
+            ],
+            [
+                "Keshubhai_Patel",
+                "nationality",
+                "Indian_nationality_law"
+            ]
+        ],
+        "score": "0.47004225850105286",
+        "rank": "1",
+        "new_score": "0.6841391324996948",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Poisonblack",
+            "associatedMusicalArtist",
+            "Sentenced"
+        ],
+        "rule": [
+            [
+                "Poisonblack",
+                "associatedBand",
+                "Sentenced"
+            ]
+        ],
+        "score": "0.7592458724975586",
+        "rank": "1",
+        "new_score": "0.1053820550441742",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Henderson_County,_Illinois",
+            "countySeat",
+            "Oquawka,_Illinois"
+        ],
+        "rule": [
+            [
+                "Oquawka,_Illinois",
+                "region",
+                "Henderson_County,_Illinois"
+            ]
+        ],
+        "score": "0.48681503534317017",
+        "rank": "1",
+        "new_score": "0.5472567677497864",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Erich_Beine",
+            "birthPlace",
+            "Germany"
+        ],
+        "rule": [
+            [
+                "Erich_Beine",
+                "deathPlace",
+                "Germany"
+            ]
+        ],
+        "score": "0.8069941401481628",
+        "rank": "1",
+        "new_score": "0.010449571534991264",
+        "new_rank": "3"
+    },
+    {
+        "triple_to_explain": [
+            "Houlletia",
+            "family",
+            "Orchidaceae"
+        ],
+        "rule": [
+            [
+                "Houlletia",
+                "division",
+                "Flowering_plant"
+            ],
+            [
+                "Houlletia",
+                "family",
+                "Epidendroideae"
+            ]
+        ],
+        "score": "0.019069451838731766",
+        "rank": "1",
+        "new_score": "0.040377870202064514",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Bad_Nauheim",
+            "country",
+            "Germany"
+        ],
+        "rule": [
+            [
+                "Thomas_Drescher",
+                "birthPlace",
+                "Bad_Nauheim"
+            ]
+        ],
+        "score": "0.1199660524725914",
+        "rank": "1",
+        "new_score": "0.09233728796243668",
+        "new_rank": "2"
+    },
+    {
+        "triple_to_explain": [
+            "Jeff_Healey",
+            "associatedBand",
+            "Jeff_Healey"
+        ],
+        "rule": [
+            [
+                "Jeff_Healey",
+                "associatedMusicalArtist",
+                "Jeff_Healey"
+            ]
+        ],
+        "score": "0.40557417273521423",
+        "rank": "1",
+        "new_score": "2.7946134650846943e-05",
+        "new_rank": "6584"
+    },
+    {
+        "triple_to_explain": [
+            "Enga\u00f1ada",
+            "company",
+            "Venevisi\u00f3n"
+        ],
+        "rule": [
+            [
+                "Enga\u00f1ada",
+                "channel",
+                "Venevisi\u00f3n"
+            ]
+        ],
+        "score": "0.7956312894821167",
+        "rank": "1",
+        "new_score": "5.715123188565485e-05",
+        "new_rank": "141"
+    },
+    {
+        "triple_to_explain": [
+            "Myrmecophila_humboldtii",
+            "family",
+            "Epidendroideae"
+        ],
+        "rule": [
+            [
+                "Myrmecophila_humboldtii",
+                "division",
+                "Flowering_plant"
+            ],
+            [
+                "Myrmecophila_humboldtii",
+                "family",
+                "Orchidaceae"
+            ]
+        ],
+        "score": "0.0070240371860563755",
+        "rank": "1",
+        "new_score": "0.0013798611471429467",
+        "new_rank": "3"
+    },
+    {
+        "triple_to_explain": [
+            "United_Nations_(band)",
+            "associatedMusicalArtist",
+            "Head_Automatica"
+        ],
+        "rule": [
+            [
+                "United_Nations_(band)",
+                "recordLabel",
+                "Temporary_Residence_Limited"
+            ]
+        ],
+        "score": "0.6702784299850464",
+        "rank": "1",
+        "new_score": "0.6230009198188782",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Ren\u00e9_&_Angela",
+            "associatedBand",
+            "Lamont_Dozier"
+        ],
+        "rule": [
+            [
+                "Ren\u00e9_&_Angela",
+                "associatedMusicalArtist",
+                "Lamont_Dozier"
+            ]
+        ],
+        "score": "0.11276950687170029",
+        "rank": "1",
+        "new_score": "0.00011189716315129772",
+        "new_rank": "885"
+    },
+    {
+        "triple_to_explain": [
+            "Emiliano_Chamorro_Vargas",
+            "birthPlace",
+            "Nicaragua"
+        ],
+        "rule": [
+            [
+                "Emiliano_Chamorro_Vargas",
+                "deathPlace",
+                "Nicaragua"
+            ]
+        ],
+        "score": "0.5626351833343506",
+        "rank": "1",
+        "new_score": "4.8501635319553316e-05",
+        "new_rank": "588"
+    },
+    {
+        "triple_to_explain": [
+            "Goldenrod",
+            "kingdom",
+            "Plant"
+        ],
+        "rule": [
+            [
+                "Goldenrod",
+                "division",
+                "Flowering_plant"
+            ]
+        ],
+        "score": "0.38757288455963135",
+        "rank": "1",
+        "new_score": "0.12783183157444",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Rizky_Pellu",
+            "team",
+            "Indonesia_national_under-23_football_team"
+        ],
+        "rule": [
+            [
+                "Rizky_Pellu",
+                "team",
+                "Mitra_Kukar_F.C."
+            ]
+        ],
+        "score": "0.011565947905182838",
+        "rank": "1",
+        "new_score": "0.003019997151568532",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Iisa_Pa_Lamang",
+            "network",
+            "ABS-CBN"
+        ],
+        "rule": [
+            [
+                "Iisa_Pa_Lamang",
+                "developer",
+                "ABS-CBN"
+            ]
+        ],
+        "score": "0.9462737441062927",
+        "rank": "1",
+        "new_score": "0.00040597625775262713",
+        "new_rank": "53"
+    },
+    {
+        "triple_to_explain": [
+            "Brett_Dier",
+            "knownFor",
+            "Ravenswood_(TV_series)"
+        ],
+        "rule": [
+            [
+                "Ravenswood_(TV_series)",
+                "starring",
+                "Brett_Dier"
+            ]
+        ],
+        "score": "0.14234432578086853",
+        "rank": "1",
+        "new_score": "1.675412931945175e-05",
+        "new_rank": "2825"
+    },
+    {
+        "triple_to_explain": [
+            "MiniD",
+            "influencedBy",
+            "Lua_(programming_language)"
+        ],
+        "rule": [
+            [
+                "Lua_(programming_language)",
+                "influenced",
+                "MiniD"
+            ]
+        ],
+        "score": "0.07262060046195984",
+        "rank": "1",
+        "new_score": "4.100173100596294e-05",
+        "new_rank": "6616"
+    },
+    {
+        "triple_to_explain": [
+            "Yann_Benoist",
+            "genre",
+            "Folk_music"
+        ],
+        "rule": [
+            [
+                "Yann_Benoist",
+                "genre",
+                "Jazz"
+            ]
+        ],
+        "score": "0.0008251199033111334",
+        "rank": "1",
+        "new_score": "0.0027473412919789553",
+        "new_rank": "5"
+    },
+    {
+        "triple_to_explain": [
+            "Kamoliddin_Tajiev",
+            "birthPlace",
+            "Soviet_Union"
+        ],
+        "rule": [
+            [
+                "Kamoliddin_Tajiev",
+                "birthPlace",
+                "Soviet_Union"
+            ]
+        ],
+        "score": "0.8965431451797485",
+        "rank": "1",
+        "new_score": "0.0005681422771885991",
+        "new_rank": "9"
+    },
+    {
+        "triple_to_explain": [
+            "Djivan_Gasparyan",
+            "associatedBand",
+            "Roman_Miroshnichenko"
+        ],
+        "rule": [
+            [
+                "Djivan_Gasparyan",
+                "associatedMusicalArtist",
+                "Derek_Sherinian"
+            ]
+        ],
+        "score": "0.2549464702606201",
+        "rank": "1",
+        "new_score": "0.07698041945695877",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Octomeria_linearifolia",
+            "division",
+            "Flowering_plant"
+        ],
+        "rule": [
+            [
+                "Octomeria_linearifolia",
+                "family",
+                "Epidendroideae"
+            ]
+        ],
+        "score": "0.665419340133667",
+        "rank": "1",
+        "new_score": "0.5740979313850403",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Ang_Tanging_Ina",
+            "starring",
+            "Kaye_Abad"
+        ],
+        "rule": [
+            [
+                "Ang_Tanging_Ina",
+                "starring",
+                "Serena_Dalrymple"
+            ]
+        ],
+        "score": "0.01664457842707634",
+        "rank": "1",
+        "new_score": "3.6964102037018165e-05",
+        "new_rank": "4615"
+    },
+    {
+        "triple_to_explain": [
+            "Consortium_for_North_American_Higher_Education_Collaboration",
+            "language",
+            "English_language"
+        ],
+        "rule": [
+            [
+                "Texas_A&M_University",
+                "affiliation",
+                "Consortium_for_North_American_Higher_Education_Collaboration"
+            ]
+        ],
+        "score": "0.42411020398139954",
+        "rank": "1",
+        "new_score": "0.9772893190383911",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Neogardneria",
+            "division",
+            "Flowering_plant"
+        ],
+        "rule": [
+            [
+                "Neogardneria",
+                "binomial",
+                "Neogardneria"
+            ]
+        ],
+        "score": "0.7230840921401978",
+        "rank": "1",
+        "new_score": "0.9182965755462646",
+        "new_rank": "1"
+    },
+    {
+        "triple_to_explain": [
+            "Goodlyfe_Crew",
+            "associatedMusicalArtist",
+            "Blu*3"
+        ],
+        "rule": [
+            [
+                "Goodlyfe_Crew",
+                "associatedBand",
+                "Blu*3"
+            ]
+        ],
+        "score": "0.8701902627944946",
+        "rank": "1",
+        "new_score": "0.16667379438877106",
+        "new_rank": "2"
+    },
+    {
+        "triple_to_explain": [
+            "Girlfriend_(B2K_song)",
+            "musicalArtist",
+            "B2K"
+        ],
+        "rule": [
+            [
+                "Girlfriend_(B2K_song)",
+                "genre",
+                "Hip_hop_music"
+            ]
+        ],
+        "score": "0.7595905661582947",
+        "rank": "1",
+        "new_score": "0.4820476174354553",
+        "new_rank": "1"
+    }
+]
