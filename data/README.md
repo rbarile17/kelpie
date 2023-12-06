@@ -39,13 +39,13 @@ python -m src.semantic.reasoned_onto_get_classes
 ```
 to obtain the file `data/DB100K/reasoned/entities.csv` which contains for each entity the classes to which it belongs, including the implicit ones. Our extensions of Kelpie rely on this file.
 We highlight that running the reasoner for the first time resulted in inconsistent ontologies. We repaired it modifying `data/DB100K/entities.csv`, `data/DB100K/mapped/train.txt` and `data/DB100K/DBpedia.owl` and we executed the reasoner again. In this repository we provide the repaired version of the files. The version history includes all the changes to the files to repair the onotlogies.
-`data/DB100K/DB100K.owl` and `data/DB100K/reasoned/DB100K_reasoned.owl` are too big for GitHub. We uploaded them [here]().
+`data/DB100K/DB100K.owl` and `data/DB100K/reasoned/DB100K_reasoned.owl` are too big for GitHub. We uploaded them [here](https://figshare.com/s/ece7729bc1a7a8f64b26).
 
 The process is analogous for DBpedia50.
 
 For YAGO4-20 the process is different. 
 Firstly, we downloaded YAGO4 [here](https://yago-knowledge.org/data/yago4/en/2020-02-24/).
-Furthermore, we modified some axioms in the file `yago-wd-class.nt` obtaining the file `yago-wd-class-correct.nt` in the same folder to avoid unsatisfiability problems during reasoning. Download such file [here]()
+Furthermore, we modified some axioms in the file `yago-wd-class.nt` obtaining the file `yago-wd-class-correct.nt` in the same folder to avoid unsatisfiability problems during reasoning. Download such file [here](https://figshare.com/s/ece7729bc1a7a8f64b26)
 Next, we loaded the files `data/YAGO4-20/yago-wd-schema.nt` and `data/YAGO4-20/yago-wd-facts.nt` and `data/YAGO4-20/yago-wd-class-correct.nt` in GraphDB.
 Then we executed all the cells in the notebook `notebooks/yago4.ipynb` to sample a set of triples from the complete KG obtaining the files `data/YAGO4-20/train.txt`, `data/YAGO4-20/valid.txt`, `data/YAGO4-20/test.txt`.
 Then we executed all the cells in the notebook `notebooks/yago4_onto.ipynb` to obtain `data/YAGO4-20/YAGO4-20.nt`.
