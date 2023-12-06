@@ -76,6 +76,7 @@ python -m src.verify_explanations --help
 
 We highlight the presence of the value weighted_topology_based in the possible choices for the option --prefilter. It refers to our enhanched Pre-Filter. Moreover, we highlight the option summarization which we introduced with our enhanced Explanation Builder. Specifically, the possible values for summarization are simulation, bisimulation and bisimulation_d1 corresponding to the three alternative formulations of this extension.
 
+## Experiments
 Finally we report all the commands executed to obtain the experiments in our paper.
 
 * TransE - DBpedia50 - necessary
