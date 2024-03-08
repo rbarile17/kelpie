@@ -1,6 +1,6 @@
 <meta name="robots" content="noindex">
 
-# Kelpie
+# Kelpie++
 
 Kelpie is a post-hoc local explainability tool for Link Prediction (LP) on Knowledge Graphs (KGs) through embedding-based models.
 
